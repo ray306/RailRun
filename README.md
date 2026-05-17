@@ -26,7 +26,7 @@ RailRun 的*核心思路*是：
 
 0. 下载zip文件并解压
 
-[最新文件](https://raw.githubusercontent.com/ray306/RailRun/main/install/railrun2016.05.17.zip)
+   - [最新文件](https://raw.githubusercontent.com/ray306/RailRun/main/install/railrun2016.05.17.zip)
 
 1. 先选入口（两种方式二选一）
 
