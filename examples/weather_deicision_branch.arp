@@ -1,0 +1,22 @@
+# 示例2：if/else 嵌套分支。
+
+step:
+  检索天气：读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。
+  读取后确认存在字段：
+  Berlin.temperature_2m、Berlin.precipitation、Berlin.weather_code、Berlin.wind_speed_10m。
+
+step:
+  提取并记录四个字段：
+  - 温度 temperature_2m
+  - 降水 precipitation
+  - 天气码 weather_code
+  - 风速 wind_speed_10m
+  请输出天气摘要：温度、降水、天气码、风速
+
+if precipitation > 0:
+  输出 "今日出行建议：带伞（原因：当前有降水）"
+else:
+  if weather_code in [51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95, 96, 99]:
+    输出 "今日出行建议：建议带伞（原因：天气码显示可能有降水）"
+  else:
+    输出 "今日出行建议：可不带伞（原因：当前无降水且天气码无降水信号）"

@@ -1,0 +1,26 @@
+{
+  "Berlin": {
+    "temperature_2m": 18.7,
+    "precipitation": 0.0,
+    "weather_code": 3,
+    "wind_speed_10m": 14.2
+  },
+  "London": {
+    "temperature_2m": 16.1,
+    "precipitation": 0.6,
+    "weather_code": 61,
+    "wind_speed_10m": 21.0
+  },
+  "Oslo": {
+    "temperature_2m": 11.4,
+    "precipitation": 0.0,
+    "weather_code": 2,
+    "wind_speed_10m": 9.8
+  },
+  "Singapore": {
+    "temperature_2m": 29.3,
+    "precipitation": 1.4,
+    "weather_code": 80,
+    "wind_speed_10m": 12.6
+  }
+}

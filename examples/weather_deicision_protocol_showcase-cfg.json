@@ -1,0 +1,224 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "22",
+  "nodes": {
+    "0": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    },
+    "1": {
+      "type": "Step",
+      "instruction": "输出 \"汇总结论:今天整体降水风险较低。\"",
+      "next": "0",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 62
+      }
+    },
+    "3": {
+      "type": "Step",
+      "instruction": "输出 \"汇总结论:今天多地有降水风险，建议整体带伞出行。\"",
+      "next": "0",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 60
+      }
+    },
+    "2": {
+      "type": "Branch",
+      "condition": "umbrella_count >= 2",
+      "on_true": "3",
+      "on_false": "1",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 59
+      }
+    },
+    "6": {
+      "type": "Step",
+      "instruction": "umbrella_count = umbrella_count + 1",
+      "next": "4",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 57
+      }
+    },
+    "5": {
+      "type": "Branch",
+      "condition": "city in [\"Berlin\", \"London\"]",
+      "on_true": "6",
+      "on_false": "4",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 56
+      }
+    },
+    "7": {
+      "type": "Step",
+      "instruction": "输出 \"建议:可不带伞（无降水信号） city\"",
+      "next": "5",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 52
+      }
+    },
+    "9": {
+      "type": "Step",
+      "instruction": "输出 \"建议:建议带伞（天气码有降水信号） city\"",
+      "next": "5",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 50
+      }
+    },
+    "8": {
+      "type": "Branch",
+      "condition": "weather_code in [51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95, 96, 99]",
+      "on_true": "9",
+      "on_false": "7",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 50
+      }
+    },
+    "11": {
+      "type": "Step",
+      "instruction": "输出 \"建议:带伞（有降水） city\"",
+      "next": "5",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 48
+      }
+    },
+    "10": {
+      "type": "Branch",
+      "condition": "precipitation > 0",
+      "on_true": "11",
+      "on_false": "8",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 47
+      }
+    },
+    "12": {
+      "type": "Step",
+      "instruction": "检索天气:读取 examples/mock_weather.json，并提取 precipitation/weather_code:city",
+      "next": "10",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 45
+      }
+    },
+    "13": {
+      "type": "Guidance",
+      "instruction": "对单城市输出建议。\n  注意：这里是流程示例，天气数据提取由上游步骤提供。",
+      "next": "12",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 40
+      }
+    },
+    "4": {
+      "type": "For",
+      "items_expr": "[\"Berlin\", \"London\", \"Oslo\"]",
+      "items": [],
+      "item_key": "city",
+      "index_key": "city_index",
+      "on_iterate": "13",
+      "on_done": "2",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 54
+      }
+    },
+    "14": {
+      "type": "Branch",
+      "condition": "round >= 2",
+      "on_true": "4",
+      "on_false": "16",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 36
+      }
+    },
+    "15": {
+      "type": "Branch",
+      "condition": "round == 1",
+      "on_true": "16",
+      "on_false": "14",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 34
+      }
+    },
+    "16": {
+      "type": "Step",
+      "instruction": "round = round + 1\n输出 \"循环轮次 {{round}}\"",
+      "next": "15",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 32
+      }
+    },
+    "17": {
+      "type": "Guidance",
+      "instruction": "准备开始循环执行",
+      "next": "16",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 30
+      }
+    },
+    "18": {
+      "type": "Step",
+      "instruction": "round = 0\numbrella_count = 0\n输出 \"开始额外校验循环。\"",
+      "next": "17",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 26
+      }
+    },
+    "19": {
+      "type": "Ask",
+      "instruction": "你想看哪些内容（温度、降水、天气码、风速）？我会根据选择输出天气摘要",
+      "next": "18",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 19
+      }
+    },
+    "20": {
+      "type": "Step",
+      "instruction": "提取并记录四个字段：\n- 温度 temperature_2m\n- 降水 precipitation\n- 天气码 weather_code\n- 风速 wind_speed_10m",
+      "next": "19",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 13
+      }
+    },
+    "21": {
+      "type": "Step",
+      "instruction": "检索天气:读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。",
+      "next": "20",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 10
+      }
+    },
+    "22": {
+      "type": "Guidance",
+      "instruction": "Weather Protocol Showcase\n覆盖：Guidance / ask / def / call / if-elif-else / while / break / continue / for / 模板变量\n说明：include 用法请查看 weather_deicision_includes_sub.arp。",
+      "next": "21",
+      "meta": {
+        "file": "examples\\weather_deicision_protocol_showcase.arp",
+        "line": 1
+      }
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\weather_deicision_protocol_showcase.arp": 1778960479.850456
+    },
+    "warnings": []
+  }
+}

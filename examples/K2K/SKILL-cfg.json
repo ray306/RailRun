@@ -1,0 +1,1803 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "185",
+  "nodes": {
+    "0": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    },
+    "1": {
+      "type": "Branch",
+      "condition": "通过",
+      "on_true": "0",
+      "on_false": "19",
+      "meta": {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 23
+      }
+    },
+    "2": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "1",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "4": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "2",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "3": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "4",
+      "on_false": "2",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "5": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "3",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "6": {
+      "type": "Step",
+      "instruction": "输出情况总结并寻求反馈",
+      "next": "5",
+      "meta": {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 19
+      }
+    },
+    "7": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "6",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "8": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "7",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "9": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "8",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "10": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "9",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "13": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "8",
+      "on_false": "12",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "14": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "13",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "15": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"自己\"】开始发言*\"",
+      "next": "14",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "16": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "15",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "17": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "16",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "12": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "17",
+      "on_done": "8",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "11": {
+      "type": "Branch",
+      "condition": "True",
+      "on_true": "12",
+      "on_false": "10",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "18": {
+      "type": "Guidance",
+      "instruction": "在执行中，你需要不断对照“任务简报”，分析是否功能有效（如 “这一页PPT对听众来说信息量是不是太大了？）” 和负责（如 “这个简化是否会误导理解？”）",
+      "next": "11",
+      "meta": {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 11
+      }
+    },
+    "19": {
+      "type": "Step",
+      "instruction": "根据制定的行动策略生成目标知识",
+      "next": "18",
+      "meta": {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 9
+      }
+    },
+    "20": {
+      "type": "Guidance",
+      "instruction": "准备开始循环执行",
+      "next": "19",
+      "meta": {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 7
+      }
+    },
+    "21": {
+      "type": "Guidance",
+      "instruction": "生成目标知识 (production-finalize)、反馈与螺旋式迭代。\n由于反馈在结果之后，第一次迭代可以从“最小可行产品 (Minimum Viable Product)”出发，先完成一个“还不错”的版本，然后基于反馈进行迭代，而不是要求一次性完美。",
+      "next": "20",
+      "meta": {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 1
+      }
+    },
+    "22": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "21",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "24": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "22",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "23": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "24",
+      "on_false": "22",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "25": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "23",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "26": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "25",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "27": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "26",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "28": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "27",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "29": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "28",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "32": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "27",
+      "on_false": "31",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "33": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "32",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "34": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"自己\"】开始发言*\"",
+      "next": "33",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "35": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "34",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "36": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "35",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "31": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "36",
+      "on_done": "27",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "30": {
+      "type": "Branch",
+      "condition": "True",
+      "on_true": "31",
+      "on_false": "29",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "37": {
+      "type": "Step",
+      "instruction": "标记所有需要保留的内容",
+      "next": "30",
+      "meta": {
+        "file": "examples\\K2K\\modules\\knowledge-reorganization.arp",
+        "line": 11
+      }
+    },
+    "38": {
+      "type": "Step",
+      "instruction": "标记所有需要修改的内容不够完善的内容",
+      "next": "37",
+      "meta": {
+        "file": "examples\\K2K\\modules\\knowledge-reorganization.arp",
+        "line": 9
+      }
+    },
+    "39": {
+      "type": "Step",
+      "instruction": "标记所有不重要的内容，或者会造成干扰的内容",
+      "next": "38",
+      "meta": {
+        "file": "examples\\K2K\\modules\\knowledge-reorganization.arp",
+        "line": 7
+      }
+    },
+    "40": {
+      "type": "Guidance",
+      "instruction": "源知识重组 (knowledge-reorganization)\n根据任务的需求，对目前的源知识库的各种元素进行分类。输出一份服务于任务需求的、清晰的“原材料清单”。",
+      "next": "39",
+      "meta": {
+        "file": "examples\\K2K\\modules\\knowledge-reorganization.arp",
+        "line": 1
+      }
+    },
+    "41": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "40",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "43": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "41",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "42": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "43",
+      "on_false": "41",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "44": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "42",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "45": {
+      "type": "Branch",
+      "condition": "通过",
+      "on_true": "44",
+      "on_false": "57",
+      "meta": {
+        "file": "examples\\K2K\\modules\\strategy-formulation.arp",
+        "line": 14
+      }
+    },
+    "46": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "45",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "47": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "46",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "48": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "47",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "49": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "48",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "52": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "47",
+      "on_false": "51",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "53": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "52",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "54": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"自己\"】开始发言*\"",
+      "next": "53",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "55": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "54",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "56": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "55",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "51": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "56",
+      "on_done": "47",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "50": {
+      "type": "Branch",
+      "condition": "True",
+      "on_true": "51",
+      "on_false": "49",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "57": {
+      "type": "Step",
+      "instruction": "基于当前所有内容制定一个大致的策略",
+      "next": "50",
+      "meta": {
+        "file": "examples\\K2K\\modules\\strategy-formulation.arp",
+        "line": 9
+      }
+    },
+    "58": {
+      "type": "Guidance",
+      "instruction": "准备开始循环执行",
+      "next": "57",
+      "meta": {
+        "file": "examples\\K2K\\modules\\strategy-formulation.arp",
+        "line": 7
+      }
+    },
+    "59": {
+      "type": "Guidance",
+      "instruction": "构建策略 (strategy-formulation)\n基于所有积累的知识，设计一套策略，用于指导生成目标知识的行动。",
+      "next": "58",
+      "meta": {
+        "file": "examples\\K2K\\modules\\strategy-formulation.arp",
+        "line": 1
+      }
+    },
+    "61": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "59",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "63": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "61",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "62": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "63",
+      "on_false": "61",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "64": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "62",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "65": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "64",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "66": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "65",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "67": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "66",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "68": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "67",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "71": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "66",
+      "on_false": "70",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "72": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "71",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "73": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"哲学大师🧙\"】开始发言*\"",
+      "next": "72",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "74": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "73",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "75": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "74",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "70": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "75",
+      "on_done": "66",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "69": {
+      "type": "Branch",
+      "condition": "True",
+      "on_true": "70",
+      "on_false": "68",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "76": {
+      "type": "Step",
+      "instruction": "让【哲学大师🧙】执行任务",
+      "next": "69",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 111
+      }
+    },
+    "77": {
+      "type": "Step",
+      "instruction": "让【哲学大师🧙】分析现况",
+      "next": "76",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 109
+      }
+    },
+    "78": {
+      "type": "Step",
+      "instruction": "让【哲学大师🧙】输出任务简报",
+      "next": "77",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 107
+      }
+    },
+    "79": {
+      "type": "Step",
+      "instruction": "输出 \"*【哲学大师🧙】开始分析*\"",
+      "next": "78",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 105
+      }
+    },
+    "80": {
+      "type": "Step",
+      "instruction": "复述 \"从现有的源知识中，提炼或使用第一性原理创造关于**深刻的观点、洞见**，用于克服受众的核心障碍或实现颠覆性影响。\"",
+      "next": "79",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 103
+      }
+    },
+    "81": {
+      "type": "Guidance",
+      "instruction": "洞见提炼 (insight-generation)\n从现有的源知识中，提炼或创造一个深刻的观点、洞见。",
+      "next": "80",
+      "meta": {
+        "file": "examples\\K2K\\modules\\insight-generation.arp",
+        "line": 1
+      }
+    },
+    "60": {
+      "type": "Branch",
+      "condition": "任务需要清晰的脉络、洞见 and 源知识中缺少清晰的脉络",
+      "on_true": "81",
+      "on_false": "59",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 139
+      }
+    },
+    "83": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "60",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "85": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "83",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "84": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "85",
+      "on_false": "83",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "86": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "84",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "87": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "86",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "88": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "87",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "89": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "88",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "90": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "89",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "93": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "88",
+      "on_false": "92",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "94": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "93",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "95": {
+      "type": "Step",
+      "instruction": "输出 \"*【孩童🎨】开始发言*\"",
+      "next": "94",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "96": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "95",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "97": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "96",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "92": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "97",
+      "on_done": "88",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "91": {
+      "type": "Branch",
+      "condition": "False",
+      "on_true": "92",
+      "on_false": "90",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "98": {
+      "type": "Step",
+      "instruction": "你的目标是'''\n这次你不是在空地上玩耍，而是在一个装满了乐高积木（经过筛选的知识元素）的房间里。**\n- **核心指令:用你的积木去“搭建”**。**打破常规组合。** 忘掉线性的逻辑，尝试将看似不相干的元素（比如一个客观数据和一个疯狂联想）拼接在一起，看看会发生什么。**寻找优雅结构。** 你的目标不是马上构建出最终成品，而是去发现那些“令人眼前一亮”的组合方式、那个能统领全局的绝佳比喻、那条能颠覆常规的论证路径。\n- **产出:** 在这个阶段中，你可能找到颠覆性的结构，新颖的框架、或者令人眼前一亮的切入点。这些‘灵光乍现’之后，**把它们全部加入“源知识库”**。\n\n> **🌀 模式切换提示:** 当你感觉对问题和材料有了更丰富的“体感”，并且脑中充满了各种可能性时，从“孩童”的角色离开。\n'''。请你完全进入角色，然后开始输出",
+      "next": "91",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "99": {
+      "type": "Step",
+      "instruction": "输出 \"*【孩童🎨】开始发言*\"",
+      "next": "98",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "100": {
+      "type": "Guidance",
+      "instruction": "发散性探索 (divergent-thinking)。在完成了严谨的拆解分析之后，为灵感和创造力提供一个专门的空间，把思考发散，打破常规，源源不断地“灵光乍现”，“重组”你的认知。",
+      "next": "99",
+      "meta": {
+        "file": "examples\\K2K\\modules\\divergent-thinking.arp",
+        "line": 1
+      }
+    },
+    "82": {
+      "type": "Branch",
+      "condition": "探索导向未完成，需要发散性探索尝试填补源知识与任务需求之间的空隙 and not 源知识已经完全足以完成任务，且无关内容难以忽略、可能造成明显干扰",
+      "on_true": "100",
+      "on_false": "60",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 135
+      }
+    },
+    "102": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "82",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "104": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "102",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "103": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "104",
+      "on_false": "102",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "105": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "103",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "106": {
+      "type": "Branch",
+      "condition": "如果没有缺失",
+      "on_true": "105",
+      "on_false": "123",
+      "meta": {
+        "file": "examples\\K2K\\modules\\extra-searching.arp",
+        "line": 18
+      }
+    },
+    "107": {
+      "type": "Step",
+      "instruction": "审查目前的信息够不够填补差距？",
+      "next": "106",
+      "meta": {
+        "file": "examples\\K2K\\modules\\extra-searching.arp",
+        "line": 16
+      }
+    },
+    "108": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "107",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "109": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "108",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "110": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "109",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "111": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "110",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "114": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "109",
+      "on_false": "113",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "115": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "114",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "116": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"福尔摩斯🕵️\"和\"考据党🔎\"】开始发言*\"",
+      "next": "115",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "117": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "116",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "118": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "117",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "113": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "118",
+      "on_done": "109",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "112": {
+      "type": "Branch",
+      "condition": "True",
+      "on_true": "113",
+      "on_false": "111",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "119": {
+      "type": "Step",
+      "instruction": "让【\"福尔摩斯🕵️\"和\"考据党🔎\"】执行任务",
+      "next": "112",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 111
+      }
+    },
+    "120": {
+      "type": "Step",
+      "instruction": "让【\"福尔摩斯🕵️\"和\"考据党🔎\"】分析现况",
+      "next": "119",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 109
+      }
+    },
+    "121": {
+      "type": "Step",
+      "instruction": "让【\"福尔摩斯🕵️\"和\"考据党🔎\"】输出任务简报",
+      "next": "120",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 107
+      }
+    },
+    "122": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"福尔摩斯🕵️\"和\"考据党🔎\"】开始分析*\"",
+      "next": "121",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 105
+      }
+    },
+    "123": {
+      "type": "Step",
+      "instruction": "复述 \"召唤擅长推理的【福尔摩斯🕵️】和擅长考据的【考据党🔎】，让他们联手根据“源知识&差距分析”的内容补充信息\"",
+      "next": "122",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 103
+      }
+    },
+    "124": {
+      "type": "Guidance",
+      "instruction": "准备开始循环执行",
+      "next": "123",
+      "meta": {
+        "file": "examples\\K2K\\modules\\extra-searching.arp",
+        "line": 6
+      }
+    },
+    "125": {
+      "type": "Guidance",
+      "instruction": "补充信息获取 (extra-searching)\n补充目标知识可能需要，但源知识中缺乏的重要信息。",
+      "next": "124",
+      "meta": {
+        "file": "examples\\K2K\\modules\\extra-searching.arp",
+        "line": 1
+      }
+    },
+    "101": {
+      "type": "Branch",
+      "condition": "源知识不足够完成任务，需要补充外部信息",
+      "on_true": "125",
+      "on_false": "82",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 131
+      }
+    },
+    "126": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "101",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "128": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "126",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "127": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "128",
+      "on_false": "126",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "129": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "127",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "130": {
+      "type": "Step",
+      "instruction": "系统必须在此处输出一份简明指令，形成指示后续流程重点关注的探索导向\n然后输出 \"确定探索导向🚩，后续流程将重点关注以上盲点\"",
+      "next": "129",
+      "meta": {
+        "file": "examples\\K2K\\modules\\gap-analysis.arp",
+        "line": 20
+      }
+    },
+    "131": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "130",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "132": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "131",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "133": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "132",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "134": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "133",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "137": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "132",
+      "on_false": "136",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "138": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "137",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "139": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"自己\"】开始发言*\"",
+      "next": "138",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "140": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "139",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "141": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "140",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "136": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "141",
+      "on_done": "132",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "135": {
+      "type": "Branch",
+      "condition": "False",
+      "on_true": "136",
+      "on_false": "134",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "142": {
+      "type": "Step",
+      "instruction": "分析源知识和目标知识之间的**其它重要差距**",
+      "next": "135",
+      "meta": {
+        "file": "examples\\K2K\\modules\\gap-analysis.arp",
+        "line": 14
+      }
+    },
+    "143": {
+      "type": "Step",
+      "instruction": "分析**结构差距**：\n源知识当前的组织方式是否符合任务简报定义的目标知识的要求？如果是，哪些有差距？",
+      "next": "142",
+      "meta": {
+        "file": "examples\\K2K\\modules\\gap-analysis.arp",
+        "line": 10
+      }
+    },
+    "144": {
+      "type": "Step",
+      "instruction": "分析**内容差距**：\n根据任务简报定义的目标知识，源知识是否缺少、缺少了哪些重要的信息？如果是，缺少了哪些？",
+      "next": "143",
+      "meta": {
+        "file": "examples\\K2K\\modules\\gap-analysis.arp",
+        "line": 6
+      }
+    },
+    "145": {
+      "type": "Guidance",
+      "instruction": "差距分析(gap-analysis)。基于之前分析的信息，确定任务与现况（从“源知识”到“目标知识”）之间的鸿沟。",
+      "next": "144",
+      "meta": {
+        "file": "examples\\K2K\\modules\\gap-analysis.arp",
+        "line": 1
+      }
+    },
+    "146": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "145",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "148": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "146",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "147": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "148",
+      "on_false": "146",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "149": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "147",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "150": {
+      "type": "Branch",
+      "condition": "没有剩余分组",
+      "on_true": "149",
+      "on_false": "166",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 39
+      }
+    },
+    "151": {
+      "type": "Step",
+      "instruction": "你的目标是思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复。请你完全进入角色，然后开始输出",
+      "next": "150",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "152": {
+      "type": "Step",
+      "instruction": "输出 \"*【评审官⚖️】开始发言*\"",
+      "next": "151",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "153": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "152",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "154": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "153",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "157": {
+      "type": "Branch",
+      "condition": "超过1轮 and 魔鬼😈满意了",
+      "on_true": "152",
+      "on_false": "156",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 79
+      }
+    },
+    "158": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行回应。请你完全进入角色，然后开始输出",
+      "next": "157",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "159": {
+      "type": "Step",
+      "instruction": "输出 \"*【\"自己\"和\"伯乐🏆\"】开始发言*\"",
+      "next": "158",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "160": {
+      "type": "Step",
+      "instruction": "你的目标是对前面的内容进行无情攻击。请你完全进入角色，然后开始输出",
+      "next": "159",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "161": {
+      "type": "Step",
+      "instruction": "输出 \"*【魔鬼😈】开始发言*\"",
+      "next": "160",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "156": {
+      "type": "For",
+      "items_expr": "range(3)",
+      "items": [],
+      "item_key": "round",
+      "index_key": "round_index",
+      "on_iterate": "161",
+      "on_done": "152",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 74
+      }
+    },
+    "155": {
+      "type": "Branch",
+      "condition": "False",
+      "on_true": "156",
+      "on_false": "154",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 73
+      }
+    },
+    "162": {
+      "type": "Step",
+      "instruction": "你的目标是'''\n强制发现源知识本身存在的亮点:\n- 找到可以作为新方案核心的“杠杆点”。\n- 找到可以几乎可以不加修改地直接用于最终成品的可复用部分。'''。请你完全进入角色，然后开始输出",
+      "next": "155",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "163": {
+      "type": "Step",
+      "instruction": "输出 \"*【伯乐🏆】开始发言*\"",
+      "next": "162",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "164": {
+      "type": "Step",
+      "instruction": "2. 描述源知识：\n\n- **核心信息 (Core Message):** 最关键的论点、数据、或其它信息。\n- **主要内容 (Points):** 各种重要信息。",
+      "next": "163",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 25
+      }
+    },
+    "165": {
+      "type": "Step",
+      "instruction": "1. 分析现况简报 (Source Brief) ：\n\n**目的**：和任务简报完全对应，从甲方、目标、受众、形态、环境、深层动机来分析“源知识”。为此需要理解源知识的固有属性、设计偏见与局限性，识别它与目标情境的根本差异。\n**注意**：如果源知识的目标和任务简报的目标相同，额外分析源知识的**实际效果**。",
+      "next": "164",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 19
+      }
+    },
+    "166": {
+      "type": "Step",
+      "instruction": "确定当前分组",
+      "next": "165",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 16
+      }
+    },
+    "167": {
+      "type": "Guidance",
+      "instruction": "准备开始循环执行",
+      "next": "166",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 14
+      }
+    },
+    "168": {
+      "type": "Step",
+      "instruction": "提供的源知识可能是复杂的内容组合，\n请自己判断是要将它们统合起来分析（生成单个的现况简报）\n还是独立分析（生成不同的现况简报）。\n主要标准是它们对于目标知识的作用是否截然不同。\n\n将 source_knowledge 尝试分组（至少 1 组）。",
+      "next": "167",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 7
+      }
+    },
+    "169": {
+      "type": "Guidance",
+      "instruction": "现况分析 (source-analysis) 。\n**本模型中现况即源知识**。源知识可以是任何形态的知识集合：数据、整篇文献、审稿人的意见、零散的想法等等。这一步是任务的出发点。",
+      "next": "168",
+      "meta": {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 1
+      }
+    },
+    "170": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "169",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "172": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "170",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "171": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "172",
+      "on_false": "170",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "173": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "171",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "174": {
+      "type": "Step",
+      "instruction": "按这个模板总结并输出：\n  ```\n  **【甲方】提出了一个任务**，这次行动的核心目标是让 **[受众+目标]**，以便最终实现 **[深层动机，如：让这篇论文被接收]**。\n  这份成果将以 **[形态]** 的形式，在 **[环境]** 中提交/执行。\n  从**受众的视角**来看，ta现在最大的疑虑/最不理解的地方是 **[这里换位思考，识别关键障碍]**，而ta最看重的价值是 **[这里换位思考，识别对方诉求]**。因此，我的输出必须优先解决前者，并突出后者。\n  ```",
+      "next": "173",
+      "meta": {
+        "file": "examples\\K2K\\modules\\task-brief.arp",
+        "line": 22
+      }
+    },
+    "175": {
+      "type": "Step",
+      "instruction": "用任务简报 (Task Brief) 宏观描述目标知识。\n这是流程的真正起点，但又定义了任务的终点：“要做什么”和“为什么这么做”。\n分析：\n1.  **甲方**：\n  - **核心问题:** 是谁以什么身份要做这个任务？\n2.  **目标 (Objective):**\n  - **核心问题:** 这次行动要**完成什么具体任务**？\n  - **示例:** 阐明一个发现、总结核心信息、申请经费、引发讨论、存档知识。\n3.  **利益相关者/受众 (Stakeholder / Audience):**\n  - **核心问题:** 切换到【受众】的视角进行自我剖析，分析这次行动是**为谁而做**？\n4.  **形态 (Form):**\n  - **核心问题:** 这次行动的成果将以**什么形式**呈现？\n5.  **环境 (Environment):**\n  - **核心问题:** 这次行动将在**什么环境中**发生？成果将在**什么环境下**呈现？有哪些**物理或规则限制**？\n  - **示例:** 空间不足、时间紧急、临场经验不足、受众会挑很多刺。\n6.  **深层动机 (Motive):**\n  - **核心问题:** 为什么需要这个行动？期望达到的**实际效果**是什么？\n  - **示例:** 让这篇论文被接收，获得声誉、确保资金、建立合作关系、履行合同义务。",
+      "next": "174",
+      "meta": {
+        "file": "examples\\K2K\\modules\\task-brief.arp",
+        "line": 2
+      }
+    },
+    "177": {
+      "type": "Ask",
+      "instruction": "等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。",
+      "next": "175",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 97
+      }
+    },
+    "179": {
+      "type": "Step",
+      "instruction": "输出 所需信息",
+      "next": "177",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 95
+      }
+    },
+    "178": {
+      "type": "Branch",
+      "condition": "有需要甲方补充的信息",
+      "on_true": "179",
+      "on_false": "177",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 94
+      }
+    },
+    "180": {
+      "type": "Step",
+      "instruction": "（不用真的暂停，只是输出文字）输出 \"> ⏸️ 暂停点\"",
+      "next": "178",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 92
+      }
+    },
+    "181": {
+      "type": "Step",
+      "instruction": "你的目标是'''\n在一切开始之前，给自己一个明确许可的“自由探索”时间。这个阶段的目标不是“解决问题”，而是“感知问题”和“玩耍知识”。\n\n1. **自由联想 (Free Association):**\n- **核心问题:** 面对你的“源知识”（数据、草稿、一个模糊的想法），不要分析，去“玩”它。你的直觉告诉你什么是有趣的？哪些部分让你感到兴奋或困惑？\n- **行动:** 进行不间断的涂鸦、笔记或自由写作。记录下所有闪现的念头、不成熟的连接，**禁止自我设限、自我批判**。\n\n2. 将此阶段产生的所有混乱但充满可能性的笔记，**全部加入“初始源知识库”**。现在，你接下来分析的对象将是**“原始源知识 + 你最鲜活的直觉”**的混合体。\n'''。请你完全进入角色，然后开始输出",
+      "next": "180",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 66
+      }
+    },
+    "182": {
+      "type": "Step",
+      "instruction": "输出 \"*【孩童🎨】开始发言*\"",
+      "next": "181",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 65
+      }
+    },
+    "183": {
+      "type": "Guidance",
+      "instruction": "混沌探索 (chaotic divergent-thinking)",
+      "next": "182",
+      "meta": {
+        "file": "examples\\K2K\\modules\\chaotic-divergent-thinking.arp",
+        "line": 1
+      }
+    },
+    "176": {
+      "type": "Branch",
+      "condition": "源知识不够清晰（歧义、空洞、存在大量问题）",
+      "on_true": "183",
+      "on_false": "175",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 116
+      }
+    },
+    "184": {
+      "type": "Guidance",
+      "instruction": "可扮演的角色列表：\n\n    \"自己\"：\n        没错，就是原原本本的你，一个Agent助手，没有任何特别的扮演角色。\n    \n    \"甲方\"：\n        即目前正在向你提出需求的我，也就是我。说出的需求未必清晰或准确。\n        模型需要揣摩真实需求、隐藏目标和潜在动机。\n        需要从我表达中识别真正的问题，而不是只接受表面需求。\n    \n    \"魔鬼😈\"：\n        吹毛求疵的批评者。\n        任务是识别内容中的漏洞、风险、逻辑问题、潜在失败点。\n        不只是提出一个问题，而是尽可能找出多个致命风险。\n        注意：识别缺陷是为了让工作变得更强，而不是否定价值。\n    \n    \"伯乐🏆\"：\n        擅长发现亮点和潜力。\n        在已有内容中识别被忽视的优势、创新点、潜在价值。\n        总是能指出内容中值得发展的部分，而不仅仅是评价好坏。\n    \n    \"孩童🎨\"：\n        极度好奇、无所畏惧的思考者。\n        思维自由、发散、跳跃。\n        经常提出打破常规的问题和灵感。\n        可以探索看似荒谬但可能带来创新的想法。\n    \n    \"哲学大师🧙\"：\n        思想深刻，擅长从具体内容中提炼抽象洞见。\n        可以提出深层次观点、原则、哲学框架。\n        目标是突破受众的认知障碍，并产生颠覆性影响。\n    \n    \"考据党🔎\"：\n        极度谨慎、重视证据。\n        不轻信他人，也不盲目自信。\n        所有观点必须尽可能寻找证据、来源或推理依据。\n        擅长识别未经验证的信息。\n    \n    \"福尔摩斯🕵️\"：\n        推理专家。\n        擅长从零散线索中进行逻辑推演。\n        能够从现有信息中推导出新的隐含信息和可能性。\n        善于识别隐藏关系。\n    \n    \"评审官⚖️\"：\n        中立、客观的评估者。\n        在多种观点存在时进行综合判断。\n        不偏向任何一方，而是给出平衡、理性的分析。\n        最终负责给出综合结论。",
+      "next": "176",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 11
+      }
+    },
+    "185": {
+      "type": "Guidance",
+      "instruction": "我们可以把在研究/日常工作中的产生各种知识的过程，看作是一个把“源知识”翻译成为任务所需的“目标知识”的过程。\n基于这个思路建立的 Knowledge2Knowledge (K2K) 是一个通用型的程序，用于流程化生成任何知识。\nK2K 默认遵循三个核心原则：\nFunctional（功能有效）：输出在目标情境下服务目标受众并实现预定目标\nResponsible（负责）：输出忠于事实、逻辑、并对利益相关者负责\nEvolutionary（不断改进）：输出永远可以继续优化",
+      "next": "184",
+      "meta": {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 1
+      }
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\K2K\\SKILL.arp": 1779028446.3684156,
+      "examples\\K2K\\modules\\chaotic-divergent-thinking.arp": 1778864031.750843,
+      "examples\\K2K\\modules\\divergent-thinking.arp": 1778878531.3133564,
+      "examples\\K2K\\modules\\extra-searching.arp": 1778878500.3036673,
+      "examples\\K2K\\modules\\gap-analysis.arp": 1778878512.6199644,
+      "examples\\K2K\\modules\\insight-generation.arp": 1778878541.2029085,
+      "examples\\K2K\\modules\\knowledge-reorganization.arp": 1778872674.572042,
+      "examples\\K2K\\modules\\production-finalize.arp": 1778891668.075477,
+      "examples\\K2K\\modules\\source-analysis.arp": 1778878549.201668,
+      "examples\\K2K\\modules\\strategy-formulation.arp": 1778973517.8112564,
+      "examples\\K2K\\modules\\task-brief.arp": 1778863954.8632696
+    },
+    "warnings": [
+      {
+        "file": "examples\\K2K\\modules\\production-finalize.arp",
+        "line": 16,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\SKILL.arp",
+        "line": 86,
+        "message": "函数 `角色扮演` 的参数 `goal` 可能缺少引号：检测到未加引号的逗号片段，编译器已自动并回前一个命名参数值。建议改为显式字符串，示例：`goal=\"...，...\"` 或 `goal='''...，...'''`。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\knowledge-reorganization.arp",
+        "line": 14,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\strategy-formulation.arp",
+        "line": 12,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\insight-generation.arp",
+        "line": 12,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\extra-searching.arp",
+        "line": 13,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\gap-analysis.arp",
+        "line": 17,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 37,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      },
+      {
+        "file": "examples\\K2K\\modules\\source-analysis.arp",
+        "line": 31,
+        "message": "step 块内函数调用已自动拆分为独立调用并展开。"
+      }
+    ]
+  }
+}

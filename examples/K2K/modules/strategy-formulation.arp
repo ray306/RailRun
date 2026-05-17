@@ -1,0 +1,15 @@
+"""
+构建策略 (strategy-formulation)
+基于所有积累的知识，设计一套策略，用于指导生成目标知识的行动。
+""" 
+
+# 螺旋式迭代
+while True:
+    step:
+        基于当前所有内容制定一个大致的策略
+
+    step:
+        压力测试(defender="自己", debate_mode=True)
+
+    if 通过:
+        break

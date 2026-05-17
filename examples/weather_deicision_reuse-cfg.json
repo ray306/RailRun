@@ -1,0 +1,62 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "5",
+  "nodes": {
+    "0": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    },
+    "1": {
+      "type": "Step",
+      "instruction": "根据 umbrella_score 给出最终建议并输出：\n- 3-5 分 => 带伞\n- 1-2 分 => 建议带伞\n- 0 分 => 可不带伞\n格式固定：\n今日出行建议：<建议>（Berlin的score是<分数>，原因：<一句话>）",
+      "next": "0",
+      "meta": {
+        "file": "examples\\weather_deicision_reuse.arp",
+        "line": 10
+      }
+    },
+    "2": {
+      "type": "Guidance",
+      "instruction": "汇总打分并输出固定格式建议。",
+      "next": "1",
+      "meta": {
+        "file": "examples\\weather_deicision_reuse.arp",
+        "line": 5
+      }
+    },
+    "3": {
+      "type": "Step",
+      "instruction": "基于刚才提取的天气数据计算 umbrella_score（只计算，不做流程分支）：\n- precipitation > 0，加 2 分\n- weather_code 属于降雨/降雪/雷暴，加 2 分\n- wind_speed_10m >= 30，加 1 分\n输出 umbrella_score。",
+      "next": "2",
+      "meta": {
+        "file": "examples\\weather_deicision_reuse.arp",
+        "line": 21
+      }
+    },
+    "4": {
+      "type": "Step",
+      "instruction": "提取并记录四个字段：\n- 温度 temperature_2m\n- 降水 precipitation\n- 天气码 weather_code\n- 风速 wind_speed_10m\n请输出天气摘要：温度、降水、天气码、风速",
+      "next": "3",
+      "meta": {
+        "file": "examples\\weather_fetch_sub.arp",
+        "line": 9
+      }
+    },
+    "5": {
+      "type": "Step",
+      "instruction": "检索天气：读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。\n读取后确认存在字段：\nBerlin.temperature_2m、Berlin.precipitation、Berlin.weather_code、Berlin.wind_speed_10m。",
+      "next": "4",
+      "meta": {
+        "file": "examples\\weather_fetch_sub.arp",
+        "line": 4
+      }
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\weather_deicision_reuse.arp": 1778959919.4963217,
+      "examples\\weather_fetch_sub.arp": 1778955254.4288201
+    },
+    "warnings": []
+  }
+}

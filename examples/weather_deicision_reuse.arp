@@ -1,0 +1,28 @@
+# 示例3：include导入 + 函数定义/调用
+
+# 定义一个函数
+def summarize_decision(city):
+  """
+  汇总打分并输出固定格式建议。
+  """
+
+  step:
+    根据 umbrella_score 给出最终建议并输出：
+    - 3-5 分 => 带伞
+    - 1-2 分 => 建议带伞
+    - 0 分 => 可不带伞
+    格式固定：
+    今日出行建议：<建议>（{{city}}的score是<分数>，原因：<一句话>）
+
+# 外部子流程将在这里被展开
+include "./weather_fetch_sub.arp"
+
+step:
+  基于刚才提取的天气数据计算 umbrella_score（只计算，不做流程分支）：
+  - precipitation > 0，加 2 分
+  - weather_code 属于降雨/降雪/雷暴，加 2 分
+  - wind_speed_10m >= 30，加 1 分
+  输出 umbrella_score。
+
+# 调用函数的内容将在这里被展开，其中`{{city}}`会被替换为`Berlin`
+summarize_decision(Berlin)

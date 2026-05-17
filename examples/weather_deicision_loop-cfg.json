@@ -1,0 +1,122 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "11",
+  "nodes": {
+    "0": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    },
+    "1": {
+      "type": "Step",
+      "instruction": "输出 \"汇总结论:今天整体降水风险较低。\"",
+      "next": "0",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 25
+      }
+    },
+    "3": {
+      "type": "Step",
+      "instruction": "输出 \"汇总结论:今天多地有降水风险，建议整体带伞出行。\"",
+      "next": "0",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 23
+      }
+    },
+    "2": {
+      "type": "Branch",
+      "condition": "umbrella_count >= 2",
+      "on_true": "3",
+      "on_false": "1",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 22
+      }
+    },
+    "5": {
+      "type": "Step",
+      "instruction": "输出 \"建议:可不带伞（无降水信号） {{city}}\"",
+      "next": "4",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 20
+      }
+    },
+    "7": {
+      "type": "Step",
+      "instruction": "umbrella_count = umbrella_count + 1\n输出 \"建议：建议带伞（天气码显示可能有降水） {{city}}\"",
+      "next": "4",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 17
+      }
+    },
+    "6": {
+      "type": "Branch",
+      "condition": "weather_code in [51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95, 96, 99]",
+      "on_true": "7",
+      "on_false": "5",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 15
+      }
+    },
+    "9": {
+      "type": "Step",
+      "instruction": "umbrella_count = umbrella_count + 1\n输出 \"建议：带伞（当前有降水） {{city}}\"",
+      "next": "4",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 12
+      }
+    },
+    "8": {
+      "type": "Branch",
+      "condition": "precipitation > 0",
+      "on_true": "9",
+      "on_false": "6",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 10
+      }
+    },
+    "10": {
+      "type": "Step",
+      "instruction": "检索天气:读取 examples/mock_weather.json，并提取 precipitation/weather_code:{{city}}",
+      "next": "8",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 8
+      }
+    },
+    "4": {
+      "type": "For",
+      "items_expr": "[\"Berlin\", \"London\", \"Oslo\", \"Singapore\"]",
+      "items": [],
+      "item_key": "city",
+      "index_key": "city_index",
+      "on_iterate": "10",
+      "on_done": "2",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 7
+      }
+    },
+    "11": {
+      "type": "Step",
+      "instruction": "umbrella_count = 0\n输出 \"开始多城市天气决策。请按城市逐个读取 examples/mock_weather.json 中的天气数据。\"",
+      "next": "4",
+      "meta": {
+        "file": "examples\\weather_deicision_loop.arp",
+        "line": 4
+      }
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\weather_deicision_loop.arp": 1778974938.218155
+    },
+    "warnings": []
+  }
+}

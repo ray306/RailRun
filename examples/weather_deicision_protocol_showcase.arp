@@ -1,0 +1,62 @@
+"""
+Weather Protocol Showcase
+覆盖：Guidance / ask / def / call / if-elif-else / while / break / continue / for / 模板变量
+说明：include 用法请查看 weather_deicision_includes_sub.arp。
+"""
+
+
+# 单城市
+
+检索天气：读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。
+
+step:
+  提取并记录四个字段：
+  - 温度 temperature_2m
+  - 降水 precipitation
+  - 天气码 weather_code
+  - 风速 wind_speed_10m
+
+ask:
+  你想看哪些内容（温度、降水、天气码、风速）？我会根据选择输出天气摘要
+
+
+# 多城市
+
+step:
+  round = 0
+  umbrella_count = 0
+  输出 "开始额外校验循环。"
+
+while True:
+  step:
+    round = round + 1
+    输出 "循环轮次 {{round}}"
+  if round == 1:
+    continue
+  if round >= 2:
+    break
+
+def evaluate_city(city):
+  """
+  对单城市输出建议。
+  注意：这里是流程示例，天气数据提取由上游步骤提供。
+  """
+
+  检索天气：读取 examples/mock_weather.json，并提取 precipitation/weather_code：{{city}}
+
+  if precipitation > 0:
+    输出 "建议：带伞（有降水） {{city}}"
+  elif weather_code in [51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95, 96, 99]:
+    输出 "建议：建议带伞（天气码有降水信号） {{city}}"
+  else:
+    输出 "建议：可不带伞（无降水信号） {{city}}"
+
+for city in ["Berlin", "London", "Oslo"]:
+  evaluate_city(city)
+  if city in ["Berlin", "London"]:
+    umbrella_count = umbrella_count + 1
+
+if umbrella_count >= 2:
+  输出 "汇总结论：今天多地有降水风险，建议整体带伞出行。"
+else:
+  输出 "汇总结论：今天整体降水风险较低。"

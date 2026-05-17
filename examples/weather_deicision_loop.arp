@@ -1,0 +1,25 @@
+# 示例4：for + 模板变量。
+
+step:
+  umbrella_count = 0
+  输出 "开始多城市天气决策。请按城市逐个读取 examples/mock_weather.json 中的天气数据。"
+
+for city in ["Berlin", "London", "Oslo", "Singapore"]:
+  检索天气：读取 examples/mock_weather.json，并提取 precipitation/weather_code：{{city}}
+
+  if precipitation > 0:
+    step:
+      umbrella_count = umbrella_count + 1
+      输出 "建议：带伞（当前有降水） {{city}}"
+  else:
+    if weather_code in [51, 53, 55, 61, 63, 65, 71, 73, 75, 80, 81, 82, 95, 96, 99]:
+      step:
+        umbrella_count = umbrella_count + 1
+        输出 "建议：建议带伞（天气码显示可能有降水） {{city}}"
+    else:
+      输出 "建议：可不带伞（无降水信号） {{city}}"
+
+if umbrella_count >= 2:
+  输出 "汇总结论：今天多地有降水风险，建议整体带伞出行。"
+else:
+  输出 "汇总结论：今天整体降水风险较低。"

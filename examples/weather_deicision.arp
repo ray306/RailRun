@@ -1,0 +1,18 @@
+# 示例1：
+# - 显式 step：`step:`后的相同缩进的所有行会被整合到单个步骤执行
+# - 隐式 step：没有上层`step:`标记的每一行会被作为单个步骤执行
+# （`#` 注释的内容不会被 Agent 看到）
+
+
+# 显式 step
+step:
+  检索天气：读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。
+  提取四个字段：
+  - 温度 temperature_2m
+  - 降水 precipitation
+
+# 隐式 step
+输出 Berlin 的温度
+
+# 隐式 step
+输出 Berlin 的降水量

@@ -1,0 +1,14 @@
+# 供外部调用的子流程
+
+step:
+  检索天气：读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。
+  读取后确认存在字段：
+  Berlin.temperature_2m、Berlin.precipitation、Berlin.weather_code、Berlin.wind_speed_10m。
+
+step:
+  提取并记录四个字段：
+  - 温度 temperature_2m
+  - 降水 precipitation
+  - 天气码 weather_code
+  - 风速 wind_speed_10m
+  请输出天气摘要：温度、降水、天气码、风速

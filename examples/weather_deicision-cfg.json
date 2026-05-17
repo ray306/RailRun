@@ -1,0 +1,43 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "3",
+  "nodes": {
+    "0": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    },
+    "1": {
+      "type": "Step",
+      "instruction": "输出 Berlin 的降水量",
+      "next": "0",
+      "meta": {
+        "file": "examples\\weather_deicision.arp",
+        "line": 18
+      }
+    },
+    "2": {
+      "type": "Step",
+      "instruction": "输出 Berlin 的温度",
+      "next": "1",
+      "meta": {
+        "file": "examples\\weather_deicision.arp",
+        "line": 15
+      }
+    },
+    "3": {
+      "type": "Step",
+      "instruction": "检索天气：读取本地文件 examples/mock_weather.json，查询 Berlin 的当前天气。\n提取四个字段：\n- 温度 temperature_2m\n- 降水 precipitation",
+      "next": "2",
+      "meta": {
+        "file": "examples\\weather_deicision.arp",
+        "line": 9
+      }
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\weather_deicision.arp": 1778959694.15306
+    },
+    "warnings": []
+  }
+}

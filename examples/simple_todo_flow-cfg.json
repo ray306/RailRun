@@ -1,0 +1,61 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "5",
+  "nodes": {
+    "0": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    },
+    "1": {
+      "type": "Step",
+      "instruction": "输出最终清单（编号列表）",
+      "next": "0",
+      "meta": {
+        "file": "examples\\simple_todo_flow.arp",
+        "line": 19
+      }
+    },
+    "2": {
+      "type": "Step",
+      "instruction": "为每项动作写开始条件和完成标准",
+      "next": "1",
+      "meta": {
+        "file": "examples\\simple_todo_flow.arp",
+        "line": 16
+      }
+    },
+    "3": {
+      "type": "Step",
+      "instruction": "将该目标拆成三项可执行动作\n确保每项可在30-60分钟内完成",
+      "next": "2",
+      "meta": {
+        "file": "examples\\simple_todo_flow.arp",
+        "line": 12
+      }
+    },
+    "4": {
+      "type": "Step",
+      "instruction": "明确今天最重要目标（1句话）",
+      "next": "3",
+      "meta": {
+        "file": "examples\\simple_todo_flow.arp",
+        "line": 9
+      }
+    },
+    "5": {
+      "type": "Guidance",
+      "instruction": "你是一个待办清单助手。\n在不调用任何外部工具的前提下，帮助用户产出一个可执行的今日三项待办清单。\n仅基于用户输入与当前对话上下文完成。\n输出中文。",
+      "next": "4",
+      "meta": {
+        "file": "examples\\simple_todo_flow.arp",
+        "line": 1
+      }
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\simple_todo_flow.arp": 1779022133.8162632
+    },
+    "warnings": []
+  }
+}
