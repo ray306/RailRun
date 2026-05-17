@@ -24,6 +24,9 @@ RailRun 的*核心思路*是：
 
 ## 怎么用
 
+0. 下载zip文件并解压
+`https://github.com/ray306/RailRun/tree/main/install/railrun2016.05.17.zip`
+
 1. 先选入口（两种方式二选一）
 
 - 方式 A（已把 `RailRun` 作为 Skill 安装）  
