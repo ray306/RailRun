@@ -119,37 +119,28 @@ def 嵌套调用(sub_task, role):
 
 if 源知识不够清晰（歧义、空洞、存在大量问题）:
     include "modules/chaotic-divergent-thinking.arp" # 混沌探索
-    暂停点()
 
 include "modules/task-brief.arp" # 任务简报
-暂停点()
 
 include "modules/source-analysis.arp" # 现况分析
-暂停点()
 
 include "modules/gap-analysis.arp" # 差距分析
-暂停点()
 
 # 进入推演流程
 
 if 源知识不足够完成任务，需要补充外部信息:
     include "modules/extra-searching.arp" # 外部信息获取
-    暂停点()
 
 if 探索导向未完成，需要发散性探索尝试填补源知识与任务需求之间的空隙 and not 源知识已经完全足以完成任务，且无关内容难以忽略、可能造成明显干扰:
     include "modules/divergent-thinking.arp" # 发散性探索
-    暂停点()
 
 if 任务需要清晰的脉络、洞见 and 源知识中缺少清晰的脉络:
     include "modules/insight-generation.arp" # 洞见提炼
-    暂停点()
 
 # 进入整合输出模块
 
 include "modules/strategy-formulation.arp" # 构建策略
-暂停点()
 
 include "modules/knowledge-reorganization.arp" # 知识重组
-暂停点()
 
 include "modules/production-finalize.arp" # 生成目标知识
