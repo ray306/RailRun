@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.arp_compiler import ArpCompiler
+from scripts.rail_compiler import RailCompiler
 from scripts.global_daemon import RailRunRuntime
 
 
@@ -67,16 +67,16 @@ class ForNodeTests(unittest.TestCase):
             ],
         )
 
-    def test_arp_compiler_emits_for_node(self) -> None:
-        arp = self.root / "for.arp"
-        arp.write_text(
+    def test_rail_compiler_emits_for_node(self) -> None:
+        rail = self.root / "for.rail"
+        rail.write_text(
             "for item in [\"x\", \"y\"]:\n"
             "  step:\n"
             "    v={{item}}\n",
             encoding="utf-8",
         )
-        compiler = ArpCompiler()
-        cfg = compiler.compile(arp)
+        compiler = RailCompiler()
+        cfg = compiler.compile(rail)
         for_nodes = [node for node in cfg["nodes"].values() if node.get("type") == "For"]
         self.assertEqual(len(for_nodes), 1)
         self.assertEqual(for_nodes[0]["item_key"], "item")

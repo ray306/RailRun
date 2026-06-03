@@ -41,5 +41,5 @@ python -m unittest discover -s tests -p "test_agent_weather_flows.py" -v
 ## 如果失败
 
 1. 先复现单个失败用例（优先用单文件运行）。
-2. 检查对应 `examples/*.arp` 是否被改动。
-3. 检查 `scripts/arp_compiler.py` 的分支/循环编译逻辑，以及 `scripts/session_runtime.py` 的分支推进逻辑。
+2. 检查对应 `examples/*.rail` 是否被改动。
+3. 检查 `scripts/rail_compiler.py` 的分支/循环编译逻辑，以及 `scripts/session_runtime.py` 的分支推进逻辑。

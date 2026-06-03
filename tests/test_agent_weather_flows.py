@@ -43,6 +43,7 @@ class AgentHarness:
         if berlin is not None:
             self.ctx["precipitation"] = float(berlin.get("precipitation", 0.0))
             self.ctx["weather_code"] = int(berlin.get("weather_code", 0))
+            self.ctx["wind_speed_10m"] = float(berlin.get("wind_speed_10m", 0.0))
         self.log: list[str] = []
 
     def _execute_step(self, instruction: str) -> None:
@@ -60,8 +61,10 @@ class AgentHarness:
 
         if "temperature_2m" in instruction and "weather_code" in instruction and "提取并记录四个字段" in instruction:
             # Sequential 子流程步骤：模拟提取完成
-            self.ctx["precipitation"] = float(self.weather_by_city.get("Berlin", {}).get("precipitation", 0.0))
-            self.ctx["weather_code"] = int(self.weather_by_city.get("Berlin", {}).get("weather_code", 0))
+            berlin = self.weather_by_city.get("Berlin", {})
+            self.ctx["precipitation"] = float(berlin.get("precipitation", 0.0))
+            self.ctx["weather_code"] = int(berlin.get("weather_code", 0))
+            self.ctx["wind_speed_10m"] = float(berlin.get("wind_speed_10m", 0.0))
 
         if "umbrella_count = umbrella_count + 1" in instruction:
             self.ctx["umbrella_count"] = int(self.ctx.get("umbrella_count", 0)) + 1
@@ -92,6 +95,9 @@ class AgentHarness:
 
         if "umbrella_count >= 2" in instruction:
             return int(self.ctx.get("umbrella_count", 0)) >= 2
+
+        if "wind_speed_10m > 15" in instruction:
+            return float(self.ctx.get("wind_speed_10m", 0.0)) > 15
 
         # Fallback for unknown condition patterns in tests.
         return False
@@ -148,8 +154,8 @@ class AgentWeatherFlowTests(unittest.TestCase):
 
     def test_sequential_weather_with_call_executes_and_finishes(self) -> None:
         rt = self._runtime_from_example(
-            "weather_deicision_includes_sub.arp",
-            extra_files=["weather_fetch_sub.arp"],
+            "weather_deicision_reuse.rail",
+            extra_files=["weather_fetch_sub.rail"],
         )
         rt.init_session("w1")
         harness = AgentHarness(
@@ -165,7 +171,7 @@ class AgentWeatherFlowTests(unittest.TestCase):
         self.assertIn("今日出行建议", joined)
 
     def test_script_default_sep_executes_branches_and_finishes(self) -> None:
-        rt = self._runtime_from_example("weather_deicision_no_sep.arp")
+        rt = self._runtime_from_example("weather_deicision_branch.rail")
         rt.init_session("w2")
         harness = AgentHarness(
             rt,
@@ -176,11 +182,10 @@ class AgentWeatherFlowTests(unittest.TestCase):
 
         self.assertEqual(done["type"], "Finished")
         joined = "\n".join(harness.log)
-        self.assertIn("今日建议", joined)
-        self.assertIn("流程结束", joined)
+        self.assertIn("今日出行建议", joined)
 
     def test_multi_weather_loop_script_executes_loop_and_summary(self) -> None:
-        rt = self._runtime_from_example("weather_deicision_loop.arp")
+        rt = self._runtime_from_example("weather_deicision_loop.rail")
         rt.init_session("w3")
         harness = AgentHarness(
             rt,
@@ -201,6 +206,25 @@ class AgentWeatherFlowTests(unittest.TestCase):
         # Ensure at least 4 city fetch actions occurred (loop truly iterated).
         fetch_lines = [line for line in harness.log if line.startswith("weather:")]
         self.assertEqual(len(fetch_lines), 4)
+
+    def test_parameterized_weather_branch_check_wind(self) -> None:
+        _copy_example("weather_deicision_branch.rail", self.root)
+        rt = RailRunRuntime(
+            self.root / "weather_deicision_branch.rail",
+            self.sessions,
+            consts={"check_wind": True},
+        )
+        rt.init_session("w_param")
+        harness = AgentHarness(
+            rt,
+            "w_param",
+            weather_by_city={"Berlin": {"precipitation": 0.0, "weather_code": 0, "wind_speed_10m": 18.0}},
+        )
+        done = harness.run()
+        self.assertEqual(done["type"], "Finished")
+        joined = "\n".join(harness.log)
+        self.assertIn("建议带伞", joined)
+        self.assertIn("风速较大", joined)
 
 
 if __name__ == "__main__":

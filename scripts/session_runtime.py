@@ -77,11 +77,20 @@ def advance_session(
     now_fn: Callable[[], str],
 ) -> tuple[dict[str, Any], SessionState]:
     nodes = dag["nodes"]
+    current_step_index = int(session.cursor.get("step_index", 0))
 
     if session.status == "done":
-        return {"type": "Finished", "message": "所有指令已执行完毕。结束输出。"}, session
+        return {
+            "type": "Finished",
+            "message": "所有指令已执行完毕。结束输出。",
+            "step_index": current_step_index,
+        }, session
     if session.status == "interference":
-        return {"type": "HumanInterferenceRequest", "message": "请人工介入"}, session
+        return {
+            "type": "HumanInterferenceRequest",
+            "message": "请人工介入",
+            "step_index": current_step_index,
+        }, session
 
     if session.waiting_for_branch:
         if not step_input.branch_present:
@@ -121,13 +130,19 @@ def advance_session(
         return {
             "type": "Finished",
             "message": node.get("message") or node.get("instruction") or "所有指令已执行完毕。结束输出。",
+            "step_index": int(session.cursor["step_index"]),
         }, session
 
     if node_type == "HumanInterferenceRequest":
         session.status = "interference"
-        return {"type": "HumanInterferenceRequest", "message": node.get("message", "请人工介入")}, session
+        return {
+            "type": "HumanInterferenceRequest",
+            "message": node.get("message", "请人工介入"),
+            "step_index": int(session.cursor["step_index"]),
+        }, session
 
     if node_type == "Step":
+        step_index = int(session.cursor["step_index"])
         rendered_instruction = _render_template(node["instruction"], session.vars)
         session.history.append(
             {
@@ -140,9 +155,10 @@ def advance_session(
         )
         session.cursor["step_index"] += 1
         session.cursor["node_id"] = node["next"]
-        return {"type": "Step", "instruction": rendered_instruction}, session
+        return {"type": "Step", "instruction": rendered_instruction, "step_index": step_index}, session
 
     if node_type == "Guidance":
+        step_index = int(session.cursor["step_index"])
         session.history.append(
             {
                 "step_index": session.cursor["step_index"],
@@ -154,12 +170,14 @@ def advance_session(
         )
         session.cursor["step_index"] += 1
         session.cursor["node_id"] = node["next"]
-        return {"type": "Guidance", 
+        return {"type": "Guidance",
                 "instruction": node["instruction"],
                 "message": "以上是指导性说明，不需要实际执行。请直接调用 next_step 继续。",
+            "step_index": step_index,
         }, session
 
     if node_type == "Ask":
+        step_index = int(session.cursor["step_index"])
         session.history.append(
             {
                 "step_index": session.cursor["step_index"],
@@ -176,9 +194,11 @@ def advance_session(
             "instruction": node["instruction"],
             "requires_user_input": True,
             "message": "请：1. 先询问用户问题；2. 然后暂停输出，等待用户的回答；3. 用户回答之后你给予反馈；4. 调用 next_step 继续 （你不知道、也不应预期流程什么时候结束）",
+            "step_index": step_index,
         }, session
 
     if node_type == "Branch":
+        step_index = int(session.cursor["step_index"])
         branch_text = node.get("condition")
         if not isinstance(branch_text, str) or not branch_text:
             raise ValueError("Branch 节点缺少 condition。")
@@ -198,9 +218,11 @@ def advance_session(
             "type": "Branch",
             "instruction": f"请根据当前已执行步骤的实际结果判断 condition: “{rendered_condition}” 是否成立，并在下一次调用 next_step 时传入 --branch-value true|false 参数。",
             "requires_branch_value": True,
+            "step_index": step_index,
         }, session
 
     if node_type == "For":
+        step_index = int(session.cursor["step_index"])
         items = _resolve_for_items(node, session.vars)
         item_key = node.get("item_key")
         index_key = node.get("index_key")
@@ -242,6 +264,7 @@ def advance_session(
             "state": state,
             "index": cursor if state == "iterate" else None,
             "item": items[cursor] if state == "iterate" else None,
+            "step_index": step_index,
         }, session
 
     raise ValueError(f"未知节点类型: {node_type}")

@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RailRun 流程控制台</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Sleek Slate/Blue Developer Light Theme */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #f1f5f9;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --hover-border: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-green: #10b981;
+            --accent-blue: #2563eb;
+            --accent-orange: #d97706;
+            --accent-red: #dc2626;
+            --accent-purple: #7c3aed;
+            
+            --active-bg: #eff6ff;
+            --active-border: #bfdbfe;
+            
+            --resolver-bg: #fffbeb;
+            --resolver-border: #fde68a;
+            
+            --btn-secondary-bg: #ffffff;
+            --btn-secondary-hover-bg: #f1f5f9;
+            --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+            
+            --badge-step-bg: #eff6ff;
+            --badge-step-color: #1d4ed8;
+            --badge-step-border: #bfdbfe;
+            
+            --badge-guidance-bg: #f5f3ff;
+            --badge-guidance-color: #6d28d9;
+            --badge-guidance-border: #ddd6fe;
+            
+            --badge-ask-bg: #fffbeb;
+            --badge-ask-color: #b45309;
+            --badge-ask-border: #fde68a;
+            
+            --badge-branch-bg: #fff7ed;
+            --badge-branch-color: #c2410c;
+            --badge-branch-border: #ffedd5;
+            
+            --badge-for-bg: #fdf4ff;
+            --badge-for-color: #a21caf;
+            --badge-for-border: #f5d0fe;
+            
+            --badge-finished-bg: #ecfdf5;
+            --badge-finished-color: #047857;
+            --badge-finished-border: #a7f3d0;
+            
+            --badge-terminated-bg: #fef2f2;
+            --badge-terminated-color: #991b1b;
+            --badge-terminated-border: #fecaca;
+
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        [data-theme="dark"] {
+            /* High-end Professional Developer Slate Dark Theme (VS Code / GitHub Dark Style) */
+            --bg-primary: #0f172a;       /* slate-900 */
+            --bg-secondary: #020617;     /* slate-950 */
+            --card-bg: #1e293b;          /* slate-800 */
+            --border-color: #334155;     /* slate-700 */
+            --hover-border: #475569;     /* slate-600 */
+            --text-primary: #f1f5f9;     /* slate-100 */
+            --text-secondary: #94a3b8;   /* slate-400 */
+            --accent-green: #34d399;     /* emerald-400 */
+            --accent-blue: #388bfd;      /* soft blue */
+            --accent-orange: #fb923c;    /* orange-400 */
+            --accent-red: #f87171;       /* red-400 */
+            --accent-purple: #a78bfa;    /* violet-400 */
+
+            --active-bg: rgba(56, 139, 253, 0.12);
+            --active-border: #388bfd;
+
+            --resolver-bg: rgba(251, 146, 60, 0.08);
+            --resolver-border: rgba(251, 146, 60, 0.25);
+
+            --btn-secondary-bg: #1e293b;
+            --btn-secondary-hover-bg: #334155;
+            --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+
+            --badge-step-bg: rgba(56, 139, 253, 0.15);
+            --badge-step-color: #58a6ff;
+            --badge-step-border: rgba(56, 139, 253, 0.3);
+
+            --badge-guidance-bg: rgba(167, 139, 250, 0.15);
+            --badge-guidance-color: #bc8cff;
+            --badge-guidance-border: rgba(167, 139, 250, 0.3);
+
+            --badge-ask-bg: rgba(251, 146, 60, 0.15);
+            --badge-ask-color: #fb923c;
+            --badge-ask-border: rgba(251, 146, 60, 0.3);
+
+            --badge-branch-bg: rgba(249, 115, 22, 0.15);
+            --badge-branch-color: #ff9e64;
+            --badge-branch-border: rgba(249, 115, 22, 0.3);
+
+            --badge-for-bg: rgba(217, 70, 239, 0.15);
+            --badge-for-color: #e879f9;
+            --badge-for-border: rgba(217, 70, 239, 0.3);
+
+            --badge-finished-bg: rgba(52, 211, 153, 0.15);
+            --badge-finished-color: #34d399;
+            --badge-finished-border: rgba(52, 211, 153, 0.3);
+
+            --badge-terminated-bg: rgba(248, 113, 113, 0.15);
+            --badge-terminated-color: #f87171;
+            --badge-terminated-border: rgba(248, 113, 113, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            font-family: var(--font-family);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 2rem;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        header .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        header .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 1.5rem;
+            gap: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Sidebar / Session list */
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+        }
+
+        .sidebar h2 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(120, 120, 120, 0.35);
+        }
+
+        .session-item {
+            padding: 1rem;
+            border-radius: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .session-item:hover {
+            background: var(--bg-secondary);
+            border-color: var(--hover-border);
+        }
+
+        .session-item.active {
+            background: var(--active-bg);
+            border-color: var(--active-border);
+        }
+
+        .session-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .session-id {
+            font-weight: 600;
+            font-size: 0.95rem;
+            font-family: monospace;
+            color: var(--accent-blue);
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.running {
+            background: var(--badge-step-bg);
+            color: var(--badge-step-color);
+            border: 1px solid var(--badge-step-border);
+        }
+
+        .badge.done {
+            background: var(--badge-finished-bg);
+            color: var(--badge-finished-color);
+            border: 1px solid var(--badge-finished-border);
+        }
+
+        .badge.interference {
+            background: var(--badge-ask-bg);
+            color: var(--badge-ask-color);
+            border: 1px solid var(--badge-ask-border);
+        }
+
+        .badge.terminated {
+            background: var(--badge-terminated-bg);
+            color: var(--badge-terminated-color);
+            border: 1px solid var(--badge-terminated-border);
+        }
+
+        /* Auto-refresh indicator */
+        .refresh-indicator {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-top: 0.5rem;
+        }
+
+        .refresh-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            animation: refreshPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes refreshPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Session item status decoration */
+        .session-item.status-done {
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .session-item.status-terminated {
+            border-left: 3px solid var(--accent-red);
+            opacity: 0.8;
+        }
+
+        .session-item.status-interference {
+            border-left: 3px solid var(--accent-orange);
+        }
+
+        .session-item.status-running {
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .session-status-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .session-proc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-width: 0;
+        }
+
+        .no-session {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Control Panel */
+        .control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .control-info h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-info p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            font-family: var(--font-family);
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-orange {
+            background: var(--badge-ask-bg);
+            color: var(--badge-ask-color);
+            border: 1px solid var(--badge-ask-border);
+        }
+
+        .btn-orange:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: var(--badge-terminated-bg);
+            color: var(--badge-terminated-color);
+            border: 1px solid var(--badge-terminated-border);
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: var(--btn-secondary-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--btn-secondary-hover-bg);
+        }
+
+        /* Detail Grid Layout */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 1.5rem;
+            flex: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* Flow nodes */
+        .node-card {
+            padding: 1rem;
+            border-radius: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            position: relative;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .node-card.current {
+            border-color: var(--accent-blue);
+            background: var(--active-bg);
+            box-shadow: 0 0 0 2px var(--active-border);
+        }
+
+        .node-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .node-badge.step { background: var(--badge-step-bg); color: var(--badge-step-color); border: 1px solid var(--badge-step-border); }
+        .node-badge.guidance { background: var(--badge-guidance-bg); color: var(--badge-guidance-color); border: 1px solid var(--badge-guidance-border); }
+        .node-badge.ask { background: var(--badge-ask-bg); color: var(--badge-ask-color); border: 1px solid var(--badge-ask-border); }
+        .node-badge.branch { background: var(--badge-branch-bg); color: var(--badge-branch-color); border: 1px solid var(--badge-branch-border); }
+        .node-badge.for { background: var(--badge-for-bg); color: var(--badge-for-color); border: 1px solid var(--badge-for-border); }
+        .node-badge.finished { background: var(--badge-finished-bg); color: var(--badge-finished-color); border: 1px solid var(--badge-finished-border); }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .node-id {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: monospace;
+        }
+
+        .node-current-label {
+            font-size: 0.75rem;
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .node-content {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            color: var(--text-primary);
+        }
+
+        .node-next-info {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-top: 0.6rem;
+            padding-top: 0.5rem;
+            border-top: 1px dashed var(--border-color);
+            font-size: 0.78rem;
+        }
+
+        .node-next-label {
+            color: var(--text-secondary);
+        }
+
+        .node-next-id {
+            font-family: monospace;
+            font-weight: 600;
+            color: var(--accent-blue);
+            background: var(--badge-step-bg);
+            border: 1px solid var(--badge-step-border);
+            border-radius: 3px;
+            padding: 0.05rem 0.35rem;
+        }
+
+        .node-next-id.node-next-current {
+            color: var(--accent-green);
+            background: var(--badge-finished-bg);
+            border-color: var(--badge-finished-border);
+        }
+
+
+        /* History trajectory */
+        .trajectory-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+            padding-left: 0.75rem;
+            position: relative;
+        }
+
+        /* Timeline vertical line */
+        .trajectory-container::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            left: 6px;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .history-item {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .history-dot {
+            position: absolute;
+            left: 2px;
+            top: 8px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            border: 2px solid var(--card-bg);
+            z-index: 1;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .history-item:hover .history-dot {
+            background-color: var(--accent-blue);
+            transform: scale(1.1);
+        }
+
+        .history-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .history-card:hover {
+            background: var(--bg-primary);
+            border-color: var(--hover-border);
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .history-index {
+            font-weight: bold;
+            color: var(--accent-blue);
+        }
+
+        .history-type {
+            font-style: italic;
+        }
+
+        .history-time {
+            font-family: monospace;
+        }
+
+        .history-content {
+            font-size: 0.875rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            color: var(--text-primary);
+        }
+
+        .history-meta {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .history-jump-btn {
+            margin-top: 0.75rem;
+            display: inline-block;
+        }
+
+        /* Modal/Dialog for Branch resolving */
+        .branch-resolver-box {
+            background: var(--resolver-bg);
+            border: 1px solid var(--resolver-border);
+            border-radius: 6px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .branch-resolver-title {
+            font-weight: 600;
+            color: var(--accent-orange);
+            font-size: 0.95rem;
+        }
+
+        .branch-resolver-choices {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Custom Modal and Toast Styles */
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes toastSlideIn {
+            from { transform: translateY(1rem); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .custom-confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6); /* slate-900 with opacity */
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .custom-confirm-box {
+            width: 420px;
+            max-width: 90%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: modalFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .custom-toast {
+            display: none;
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--badge-terminated-bg);
+            color: var(--badge-terminated-color);
+            border: 1px solid var(--badge-terminated-border);
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 1001;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            animation: toastSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Custom Dialogs for Non-Blocking Interactions and Aesthetics -->
+    <div id="custom-confirm-overlay" class="custom-confirm-overlay">
+        <div class="custom-confirm-box">
+            <h3 id="confirm-title" style="font-size: 1.1rem; font-weight: 600;">操作确认</h3>
+            <p id="confirm-msg" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;"></p>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+                <button class="btn btn-secondary" id="confirm-btn-cancel">取消</button>
+                <button class="btn btn-primary" id="confirm-btn-ok">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-toast" class="custom-toast">
+        <span id="toast-text"></span>
+    </div>
+
+    <header>
+        <h1>RailRun 控制台</h1>
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span>本地守护进程正常监视中 (HTTP 8799)</span>
+            </div>
+            <button id="theme-toggle" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; font-weight: 500;">
+                <span id="theme-toggle-icon">🌙</span>
+                <span id="theme-toggle-text">深色模式</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="card">
+                <h2>会话总览</h2>
+                <div class="session-list" id="session-list">
+                    <!-- Session items will be dynamically injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="card" id="no-session-card">
+                <div class="no-session">请在左侧选择一个活跃的会话</div>
+            </div>
+
+            <div class="card" id="control-card" style="display: none;">
+                <div class="control-bar">
+                    <div class="control-info">
+                        <h3 id="detail-session-id">Session: -</h3>
+                        <p id="detail-session-proc">流程文件: -</p>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-orange" id="btn-pause" onclick="togglePauseResume()">
+                            <!-- Will be populated dynamically -->
+                        </button>
+                        <button class="btn btn-danger" id="btn-terminate" onclick="triggerTerminate()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                            终止
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branch manual resolver panel -->
+            <div class="card" id="branch-resolver" style="display: none;">
+                <div class="branch-resolver-box">
+                    <div class="branch-resolver-title">当前会话正在等待分支判断结果，请协助手动做出决策：</div>
+                    <p id="branch-condition-text" style="font-size: 0.9rem; line-height: 1.4; font-weight: 500;"></p>
+                    <div class="branch-resolver-choices">
+                        <button class="btn btn-primary" onclick="resolveBranch(true)" style="background-color: var(--accent-green);">条件成立 (True)</button>
+                        <button class="btn btn-secondary" onclick="resolveBranch(false)" style="background-color: var(--accent-red); border-color: transparent; color: white;">条件不成立 (False)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-grid" id="detail-grid" style="display: none;">
+                <!-- Left Column: CFG Nodes -->
+                <div class="card">
+                    <div class="section-title">
+                        <span>原始控制流</span>
+                    </div>
+                    <div class="flow-container" id="flow-nodes">
+                        <!-- CFG nodes -->
+                    </div>
+                </div>
+
+                <!-- Right Column: Trajectory -->
+                <div class="card">
+                    <div class="section-title">
+                        <span>执行轨迹历史</span>
+                    </div>
+                    <div class="trajectory-container" id="trajectory-list">
+                        <!-- History items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentSessionStatus = null;
+        let autoRefreshInterval = null;
+
+        // Theme switching logic
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('railrun-theme', theme);
+            const toggleIcon = document.getElementById('theme-toggle-icon');
+            const toggleText = document.getElementById('theme-toggle-text');
+            if (toggleIcon && toggleText) {
+                if (theme === 'dark') {
+                    toggleIcon.textContent = '☀️';
+                    toggleText.textContent = '浅色模式';
+                } else {
+                    toggleIcon.textContent = '🌙';
+                    toggleText.textContent = '深色模式';
+                }
+            }
+        }
+
+        // On document load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize theme
+            const savedTheme = localStorage.getItem('railrun-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            setTheme(savedTheme);
+
+            // Bind theme toggle click
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+                });
+            }
+
+            fetchSessions();
+            // Auto-refresh: session list every 5s (perceptible but not overwhelming)
+            // Active session detail refreshes at the same cadence
+            autoRefreshInterval = setInterval(() => {
+                fetchSessions();
+                if (currentSessionId) {
+                    fetchSessionDetail(currentSessionId, false);
+                }
+            }, 2000);
+        });
+
+        // Status display config
+        const STATUS_CONFIG = {
+            running:      { label: '运行中',   icon: '▶',  cls: 'running',      metaDesc: '正在执行任务' },
+            done:         { label: '已完成',   icon: '✓',  cls: 'done',         metaDesc: '任务正常结束' },
+            terminated:   { label: '已终止',   icon: '✕',  cls: 'terminated',   metaDesc: '未完成，已被强制停止' },
+            interference: { label: '暂停中',   icon: '⏸',  cls: 'interference', metaDesc: '等待人工介入' },
+        };
+
+        function getStatusConfig(status) {
+            return STATUS_CONFIG[status] || { label: status, icon: '?', cls: status, metaDesc: '' };
+        }
+
+        // Get sessions
+        function fetchSessions() {
+            fetch('/api/sessions')
+                .then(res => res.json())
+                .then(data => {
+                    renderSessionList(data.sessions);
+                })
+                .catch(err => console.error('Error fetching sessions:', err));
+        }
+
+        // Render sessions in sidebar
+        function renderSessionList(sessions) {
+            const container = document.getElementById('session-list');
+            if (sessions.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem 0; font-size: 0.9rem;">暂无会话记录</div>';
+                return;
+            }
+
+            let html = '';
+            sessions.forEach(s => {
+                const isActive = s.id === currentSessionId ? 'active' : '';
+                const pathParts = s.procedure_path.split(/[\\\/]/);
+                const baseName = pathParts[pathParts.length - 1] || s.procedure_path;
+                const sc = getStatusConfig(s.status);
+
+                html += `
+                    <div class="session-item ${isActive} status-${sc.cls}" onclick="selectSession('${s.id}')">
+                        <div class="session-item-header">
+                            <span class="session-id">${s.id}</span>
+                            <span class="badge ${sc.cls}">${sc.icon} ${sc.label}</span>
+                        </div>
+                        <div class="session-proc" title="${s.procedure_path}">📄 ${baseName}</div>
+                        <div class="session-status-meta">${sc.metaDesc}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Select a session
+        function selectSession(id) {
+            currentSessionId = id;
+            // Highlight in sidebar
+            const items = document.querySelectorAll('.session-item');
+            items.forEach(item => {
+                const sId = item.querySelector('.session-id').textContent;
+                if (sId === id) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            document.getElementById('no-session-card').style.display = 'none';
+            document.getElementById('control-card').style.display = 'block';
+            document.getElementById('detail-grid').style.display = 'grid';
+
+            fetchSessionDetail(id, true);
+        }
+
+        // Fetch detailed session info
+        function fetchSessionDetail(id, fullReset) {
+            fetch(`/api/sessions/${id}`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Session not found');
+                    return res.json();
+                })
+                .then(sessionData => {
+                    document.getElementById('detail-session-id').textContent = `Session: ${sessionData.session}`;
+                    const pathParts = sessionData.procedure_path.split(/[\\\\/]/);
+                    const baseName = pathParts[pathParts.length - 1] || sessionData.procedure_path;
+                    document.getElementById('detail-session-proc').textContent = `流程文件: ${baseName}`;
+
+                    currentSessionStatus = sessionData.status;
+
+                    // Update Badge
+                    const badgeContainer = document.querySelector('.control-info h3');
+                    // Clear existing badges
+                    const existingBadge = badgeContainer.querySelector('.badge');
+                    if (existingBadge) existingBadge.remove();
+                    
+                    const badge = document.createElement('span');
+                    const sc = getStatusConfig(sessionData.status);
+                    badge.className = `badge ${sc.cls}`;
+                    badge.style.marginLeft = '0.5rem';
+                    badge.textContent = `${sc.icon} ${sc.label}`;
+                    badgeContainer.appendChild(badge);
+
+                    // Update pause/resume button dynamically
+                    const pauseBtn = document.getElementById('btn-pause');
+                    if (sessionData.status === 'running') {
+                        pauseBtn.style.display = 'inline-flex';
+                        pauseBtn.className = 'btn btn-orange';
+                        pauseBtn.innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                            暂停流程
+                        `;
+                    } else if (sessionData.status === 'interference') {
+                        pauseBtn.style.display = 'inline-flex';
+                        pauseBtn.className = 'btn btn-primary';
+                        pauseBtn.innerHTML = `
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            恢复流程
+                        `;
+                    } else {
+                        pauseBtn.style.display = 'none';
+                    }
+
+                    // Show or hide branch manual resolver
+                    const branchResolver = document.getElementById('branch-resolver');
+                    if (sessionData.waiting_for_branch && sessionData.status === 'running') {
+                        branchResolver.style.display = 'block';
+                        // Find current node instruction to show what condition we are evaluating
+                        const branchLabel = document.getElementById('branch-condition-text');
+                        branchLabel.textContent = `正在等待条件求值。请判断条件是否满足以决定分支走势。`;
+                    } else {
+                        branchResolver.style.display = 'none';
+                    }
+
+                    // Render history trajectory
+                    renderTrajectory(sessionData.history, sessionData.status);
+
+                    // Render DAG flow nodes
+                    fetchDAG(sessionData.dag_path, sessionData.cursor.node_id);
+                })
+                .catch(err => {
+                    console.error('Error fetching session detail:', err);
+                    if (id === currentSessionId) {
+                        // Reset if active session deleted
+                        currentSessionId = null;
+                        document.getElementById('no-session-card').style.display = 'block';
+                        document.getElementById('control-card').style.display = 'none';
+                        document.getElementById('detail-grid').style.display = 'none';
+                        document.getElementById('branch-resolver').style.display = 'none';
+                    }
+                });
+        }
+
+        // Fetch compiled DAG file
+        function fetchDAG(dagPath, currentNodeId) {
+            fetch(`/api/dag?path=${encodeURIComponent(dagPath)}`)
+                .then(res => res.json())
+                .then(dag => {
+                    renderDAGNodes(dag.nodes, currentNodeId, dag.entry);
+                })
+                .catch(err => console.error('Error fetching DAG:', err));
+        }
+
+        // Render DAG nodes as a structured list
+        function renderDAGNodes(nodes, currentNodeId, entryId) {
+            const container = document.getElementById('flow-nodes');
+            let html = '';
+            
+            // Build logical order from entry
+            const orderedNodeIds = [];
+            const visited = new Set();
+            let curr = entryId;
+            while (curr && !visited.has(curr) && nodes[curr]) {
+                visited.add(curr);
+                orderedNodeIds.push(curr);
+                const node = nodes[curr];
+                if (node.type === 'Branch') {
+                    // Branch has multiple paths; for ordering, we traverse on_true first, then fallback to on_false
+                    if (nodes[node.on_true]) curr = node.on_true;
+                    else curr = node.on_false;
+                } else if (node.type === 'For') {
+                    curr = node.on_iterate;
+                } else {
+                    curr = node.next;
+                }
+            }
+
+            // Append any left-over nodes that weren't visited in the direct path
+            for (const nid in nodes) {
+                if (!visited.has(nid)) {
+                    orderedNodeIds.push(nid);
+                }
+            }
+
+            orderedNodeIds.forEach(nid => {
+                const node = nodes[nid];
+                const isCurrent = nid === String(currentNodeId) ? 'current' : '';
+                const typeClass = (node.type || '').toLowerCase();
+                
+                let contentText = node.instruction || node.condition || node.message || '';
+                if (node.type === 'For') {
+                    contentText = `遍历: ${node.items_expr || node.items} -> 迭代键: ${node.item_key}`;
+                } else if (node.type === 'Branch') {
+                    contentText = `条件分支: ${node.condition}\n成立时 -> 节点 [${node.on_true}]\n不成立时 -> 节点 [${node.on_false}]`;
+                }
+
+                // Build next-node annotation
+                let nextHtml = '';
+                if (node.type === 'Branch') {
+                    nextHtml = `
+                        <div class="node-next-info">
+                            <span class="node-next-label">&#x2794; True:</span>
+                            <span class="node-next-id ${node.on_true === String(currentNodeId) ? 'node-next-current' : ''}">${node.on_true ?? '—'}</span>
+                            <span class="node-next-label" style="margin-left:0.5rem;">&#x2794; False:</span>
+                            <span class="node-next-id ${node.on_false === String(currentNodeId) ? 'node-next-current' : ''}">${node.on_false ?? '—'}</span>
+                        </div>`;
+                } else if (node.type === 'For') {
+                    nextHtml = `
+                        <div class="node-next-info">
+                            <span class="node-next-label">&#x2794; 迭代:</span>
+                            <span class="node-next-id">${node.on_iterate ?? '—'}</span>
+                            <span class="node-next-label" style="margin-left:0.5rem;">&#x2794; 完成:</span>
+                            <span class="node-next-id">${node.on_done ?? '—'}</span>
+                        </div>`;
+                } else if (node.type !== 'Finished' && node.next != null) {
+                    nextHtml = `
+                        <div class="node-next-info">
+                            <span class="node-next-label">&#x2794; 下一节点:</span>
+                            <span class="node-next-id">${node.next}</span>
+                        </div>`;
+                } else if (node.type === 'Finished') {
+                    nextHtml = `<div class="node-next-info"><span class="node-next-label" style="color:var(--accent-green);">&#x2713; 终止节点</span></div>`;
+                }
+
+                let jumpBtnHtml = '';
+                if (!isCurrent && (currentSessionStatus === 'running' || currentSessionStatus === 'interference')) {
+                    jumpBtnHtml = `
+                        <div style="margin-top: 0.75rem; border-top: 1px dashed var(--border-color); padding-top: 0.5rem; text-align: right;">
+                            <button class="btn btn-secondary" onclick="triggerJump('${nid}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 500; display: inline-flex;">
+                                跳转到此节点
+                            </button>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="node-card ${isCurrent}">
+                        <div class="node-badge ${typeClass}">${node.type}</div>
+                        <div class="node-header">
+                            <span class="node-id">节点 ID: ${nid}</span>
+                            ${isCurrent ? '<span class="node-current-label">● 游标在此</span>' : ''}
+                        </div>
+                        <div class="node-content">${escapeHTML(contentText)}</div>
+                        ${nextHtml}
+                        ${jumpBtnHtml}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // Render history trajectory
+        function renderTrajectory(history, sessionStatus) {
+            const container = document.getElementById('trajectory-list');
+            if (!history || history.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 2rem 0; font-size: 0.9rem;">暂无执行历史</div>';
+                return;
+            }
+
+            let html = '';
+            // Render trajectory from newest to oldest
+            for (let i = history.length - 1; i >= 0; i--) {
+                const item = history[i];
+                const typeClass = (item.type || '').toLowerCase();
+                const stepIdx = item.step_index;
+                const formattedTime = item.timestamp || '';
+
+                let mainContent = item.instruction || item.condition || '';
+                if (item.type === 'BranchDecision') {
+                    mainContent = `条件判定: 结果为 [${item.branch_value ? '成立 (True)' : '不成立 (False)'}]`;
+                } else if (item.type === 'For') {
+                    mainContent = `循环状态: [${item.state}] (游标: ${item.cursor})`;
+                }
+
+                html += `
+                    <div class="history-item">
+                        <div class="history-dot"></div>
+                        <div class="history-card">
+                            <div class="history-header">
+                                <span class="history-index">步骤 #${stepIdx}</span>
+                                <span class="history-type">${item.type}</span>
+                                <span class="history-time">${formattedTime}</span>
+                            </div>
+                            <div class="history-content">${escapeHTML(mainContent)}</div>
+                            <div class="history-meta">源节点: ${item.node_id}</div>
+                            
+                            <!-- Jump action buttons (only if session is active) -->
+                            ${sessionStatus === 'running' || sessionStatus === 'interference' ? `
+                                <div class="history-jump-btn">
+                                    <button class="btn btn-secondary" onclick="triggerRewind(${stepIdx})" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                                        跳转回此步骤 (Rewind)
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        // RPC Trigger actions
+        function togglePauseResume() {
+            if (!currentSessionId || !currentSessionStatus) return;
+            if (currentSessionStatus === 'running') {
+                postRPC({ action: 'pause_session', session: currentSessionId });
+            } else if (currentSessionStatus === 'interference') {
+                postRPC({ action: 'resume_session', session: currentSessionId });
+            }
+        }
+
+        // Non-blocking custom dialog promises
+        function showConfirm(title, message) {
+            return new Promise((resolve) => {
+                document.getElementById('confirm-title').textContent = title;
+                document.getElementById('confirm-msg').textContent = message;
+                const overlay = document.getElementById('custom-confirm-overlay');
+                overlay.style.display = 'flex';
+
+                const onOk = () => {
+                    overlay.style.display = 'none';
+                    cleanup();
+                    resolve(true);
+                };
+                const onCancel = () => {
+                    overlay.style.display = 'none';
+                    cleanup();
+                    resolve(false);
+                };
+                const cleanup = () => {
+                    document.getElementById('confirm-btn-ok').removeEventListener('click', onOk);
+                    document.getElementById('confirm-btn-cancel').removeEventListener('click', onCancel);
+                };
+
+                document.getElementById('confirm-btn-ok').addEventListener('click', onOk);
+                document.getElementById('confirm-btn-cancel').addEventListener('click', onCancel);
+            });
+        }
+
+        function showToast(message, isError = true) {
+            const toast = document.getElementById('custom-toast');
+            const text = document.getElementById('toast-text');
+            text.textContent = message;
+            
+            if (isError) {
+                toast.style.background = 'var(--badge-terminated-bg)';
+                toast.style.color = 'var(--badge-terminated-color)';
+                toast.style.borderColor = 'var(--badge-terminated-border)';
+            } else {
+                toast.style.background = 'var(--badge-finished-bg)';
+                toast.style.color = 'var(--badge-finished-color)';
+                toast.style.borderColor = 'var(--badge-finished-border)';
+            }
+            
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        function triggerJump(nodeId) {
+            if (!currentSessionId) return;
+            showConfirm('跳转确认', `您确定要人工跳转执行游标到节点 ID [${nodeId}] 吗？`).then(confirmed => {
+                if (confirmed) {
+                    postRPC({ action: 'jump_to_node', session: currentSessionId, node_id: nodeId });
+                }
+            });
+        }
+
+        function triggerTerminate() {
+            if (!currentSessionId) return;
+            showConfirm('终止确认', '您确定要终止当前会话吗？').then(confirmed => {
+                if (confirmed) {
+                    postRPC({ action: 'shutdown_session', session: currentSessionId });
+                }
+            });
+        }
+
+        function triggerRewind(stepIndex) {
+            if (!currentSessionId) return;
+            showConfirm('跳转确认', `您确定要跳转/回滚状态机到步骤 #${stepIndex} 吗？`).then(confirmed => {
+                if (confirmed) {
+                    postRPC({ action: 'rewind', session: currentSessionId, step_index: stepIndex });
+                }
+            });
+        }
+
+        // Resolve branch from resolver panel
+        function resolveBranch(val) {
+            if (!currentSessionId) return;
+            postRPC({ action: 'next', session: currentSessionId, branch_value: val });
+        }
+
+        function postRPC(payload) {
+            fetch('/api/rpc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.type === 'ValidationError') {
+                    showToast('操作失败: ' + data.message, true);
+                } else if (data.type === 'ConcurrencyWarning') {
+                    showToast(data.message, true);
+                } else {
+                    showToast('操作成功', false);
+                }
+                fetchSessions();
+                if (currentSessionId) {
+                    fetchSessionDetail(currentSessionId, false);
+                }
+            })
+            .catch(err => showToast('请求失败: ' + err, true));
+        }
+
+        // Utility to escape HTML
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "session": "1dce",
+  "procedure_path": "C:\\Users\\Biao\\.codex\\skills\\railrun\\examples\\K2K\\SKILL.rail",
+  "dag_path": "C:\\Users\\Biao\\.codex\\skills\\railrun\\examples\\K2K\\SKILL-cfg.json",
+  "status": "running",
+  "cursor": {
+    "step_index": 0,
+    "node_id": "159"
+  },
+  "waiting_for_branch": false,
+  "waiting_branch_node": null,
+  "retry_count": 0,
+  "max_retries": 3,
+  "history": [],
+  "vars": {},
+  "for_cursors": {}
+}

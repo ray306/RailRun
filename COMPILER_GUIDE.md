@@ -1,6 +1,6 @@
-# ARP -> CFG 编译指南
+# RAIL -> CFG 编译指南
 
-本指南面向编译器实现者，目标是把 `.arp` 文件编译为可执行的控制流图（CFG JSON），而不是 DAG。  
+本指南面向编译器实现，目标是把 `.rail` 文件编译为可执行的控制流图（CFG JSON）。  
 本指南与 `examples/K2K/rail/PROTOCOL.md` 对齐；若冲突，以 PROTOCOL 为准。
 
 输出协议建议：
@@ -15,7 +15,7 @@
 ## 1. 编译目标
 
 输入：
-- 一个入口 `xxx.arp` 文件（例如 `SKILL.arp`）
+- 一个入口 `xxx.rail` 文件（例如 `SKILL.rail`）
 
 输出：
 - 一个控制流图 `xxx-cfg.json` 文件，满足：
@@ -46,7 +46,7 @@
   },
   "meta": {
     "sources": {
-      "<absolute_path_to_arp>": 1778598042.94
+      "<absolute_path_to_rail>": 1778598042.94
     }
   }
 }
@@ -120,7 +120,7 @@
 
 ---
 
-## 5. ARP 到 CFG 的映射规则
+## 5. RAIL 到 CFG 的映射规则
 
 ### 5.1 guidance step (`"""..."""`)
 
@@ -215,6 +215,23 @@
 - `For` 不需要 Agent 回传 `branch_value`
 - runtime 负责推进游标并写入当前轮变量（`item_key` / `index_key`）
 - 后续 `Step`/`Branch` 可通过模板变量读取当前轮值（例如 `{{item}}`）
+
+### 5.12 `params(...)`
+
+支持在入口 RAIL 文件最顶部使用“文件签名”来声明默认编译期常量参数：
+- **语法**：`params(name1=value1, name2=value2)`
+- **支持类型**：布尔值（`true`/`false`）、数字、单双引号字符串。
+- **解析行为**：
+  1. 编译器在语法分析前提取顶部的 `params(...)` 并将其从逻辑语句流中移除，以此获得默认参数集。
+  2. 运行时初始化 Session 时如果传入了覆盖参数（Invocation Constants），则对其进行合并，并校验是否有未定义的参数（Typos 检查）。
+
+### 5.13 编译期常量折叠与死代码消除 (Dead Code Elimination)
+
+合并后的编译期常量（Merged Constants）将用于编译阶段的控制流优化：
+- **静态估值**：如果 `if` 或 `elif` 条件表达式在编译期能被静态求值（使用内置 AST 求值器）：
+  - **静态真 (Statically True)**：直接将该条件分支体作为 Fallback 编译，剪掉后续所有 `elif`/`else`，且**不生成任何 `Branch` 节点**。
+  - **静态假 (Statically False)**：直接剔除该分支（即死代码消除 DCE），不为其生成任何节点。
+- **混合表达式**：对于不包含编译期常量的动态表达式，不进行常量折叠，正常编译为 `Branch` 节点在运行时进行动态判断。
 
 ---
 

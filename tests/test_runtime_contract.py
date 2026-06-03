@@ -21,7 +21,7 @@ class RuntimeContractTests(unittest.TestCase):
         self.tmpdir.cleanup()
 
     def _runtime(self, text: str, *, max_retries: int = 3) -> RailRunRuntime:
-        procedure = self.root / "flow.arp"
+        procedure = self.root / "flow.rail"
         procedure.write_text(text, encoding="utf-8")
         return RailRunRuntime(procedure, self.sessions, max_retries=max_retries)
 
@@ -31,15 +31,47 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(init["type"], "init")
 
         s1 = rt.next_step("s1")
-        self.assertEqual(s1, {"type": "Step", "instruction": "输出 A"})
+        self.assertEqual(s1, {"type": "Step", "instruction": "输出 A", "step_index": 0})
         s2 = rt.next_step("s1")
-        self.assertEqual(s2, {"type": "Step", "instruction": "输出 B"})
+        self.assertEqual(s2, {"type": "Step", "instruction": "输出 B", "step_index": 1})
         done = rt.next_step("s1")
         self.assertEqual(done["type"], "Finished")
 
+    def test_rewind_session_replays_from_target_step(self) -> None:
+        rt = self._runtime("输出 A\n输出 B\n")
+        rt.init_session("rw1")
+        first = rt.next_step("rw1")
+        second = rt.next_step("rw1")
+        self.assertEqual(first, {"type": "Step", "instruction": "输出 A", "step_index": 0})
+        self.assertEqual(second, {"type": "Step", "instruction": "输出 B", "step_index": 1})
+
+        rewound = rt.rewind_session("rw1", 1)
+        self.assertEqual(rewound["type"], "ok")
+        replay = rt.next_step("rw1")
+        self.assertEqual(replay, {"type": "Step", "instruction": "输出 B", "step_index": 1})
+
+    def test_rewind_session_from_terminal_reopens_flow(self) -> None:
+        rt = self._runtime("输出 A\n")
+        rt.init_session("rw2")
+        rt.next_step("rw2")
+        done = rt.next_step("rw2")
+        self.assertEqual(done["type"], "Finished")
+
+        rewound = rt.rewind_session("rw2", 0)
+        self.assertEqual(rewound["type"], "ok")
+        replay = rt.next_step("rw2")
+        self.assertEqual(replay, {"type": "Step", "instruction": "输出 A", "step_index": 0})
+
+    def test_rewind_session_rejects_out_of_range_step(self) -> None:
+        rt = self._runtime("输出 A\n")
+        rt.init_session("rw3")
+        rt.next_step("rw3")
+        err = rt.rewind_session("rw3", 9)
+        self.assertEqual(err["type"], "ValidationError")
+
     def test_branch_requires_bool_and_path(self) -> None:
         rt = self._runtime(
-            "if True:\n"
+            "if is_raining:\n"
             "  输出 T\n"
             "else:\n"
             "  输出 F\n"
@@ -47,18 +79,19 @@ class RuntimeContractTests(unittest.TestCase):
         rt.init_session("s2")
         branch = rt.next_step("s2")
         self.assertEqual(branch["type"], "Branch")
+        self.assertEqual(branch["step_index"], 0)
         missing = rt.next_step("s2")
         self.assertEqual(missing["type"], "ValidationError")
         wrong_type = rt.next_step("s2", branch_value="true", branch_present=True)
         self.assertEqual(wrong_type["type"], "ValidationError")
 
         step = rt.next_step("s2", branch_value=True, branch_present=True)
-        self.assertEqual(step, {"type": "Step", "instruction": "输出 T"})
+        self.assertEqual(step, {"type": "Step", "instruction": "输出 T", "step_index": 1})
         done = rt.next_step("s2")
         self.assertEqual(done["type"], "Finished")
 
     def test_retry_limit_to_human_interference(self) -> None:
-        rt = self._runtime("if True:\n  输出 ok\n", max_retries=1)
+        rt = self._runtime("if is_raining:\n  输出 ok\n", max_retries=1)
         rt.init_session("s3")
         rt.next_step("s3")  # Branch
         err1 = rt.next_step("s3")
@@ -99,7 +132,7 @@ class RuntimeContractTests(unittest.TestCase):
 
     def test_script_mode_accepts_non_python_instruction_lines(self) -> None:
         rt = self._runtime(
-            "if True:\n"
+            "if is_raining:\n"
             "  输出 \"今日出行建议：带伞\"\n"
         )
         rt.init_session("s5")
@@ -119,62 +152,62 @@ class RuntimeContractTests(unittest.TestCase):
         shared_dir.mkdir(parents=True, exist_ok=True)
 
         entry = sub_dir / "entry.procedure"
-        entry = sub_dir / "entry.arp"
-        entry.write_text('include "../shared/fetch_sub.arp"\n', encoding="utf-8")
-        (shared_dir / "fetch_sub.arp").write_text("输出 from shared\n", encoding="utf-8")
+        entry = sub_dir / "entry.rail"
+        entry.write_text('include "../shared/fetch_sub.rail"\n', encoding="utf-8")
+        (shared_dir / "fetch_sub.rail").write_text("输出 from shared\n", encoding="utf-8")
 
         rt = RailRunRuntime(entry, self.sessions)
         rt.init_session("s6")
         step = rt.next_step("s6")
-        self.assertEqual(step, {"type": "Step", "instruction": "输出 from shared"})
+        self.assertEqual(step, {"type": "Step", "instruction": "输出 from shared", "step_index": 0})
         done = rt.next_step("s6")
         self.assertEqual(done["type"], "Finished")
 
     def test_call_supports_absolute_path(self) -> None:
-        shared = self.root / "abs_shared.arp"
+        shared = self.root / "abs_shared.rail"
         shared.write_text("输出 from abs\n", encoding="utf-8")
-        entry = self.root / "flow_abs.arp"
+        entry = self.root / "flow_abs.rail"
         entry.write_text(f'include "{shared.resolve()}"\n', encoding="utf-8")
 
         rt = RailRunRuntime(entry, self.sessions)
         rt.init_session("s7")
         step = rt.next_step("s7")
-        self.assertEqual(step, {"type": "Step", "instruction": "输出 from abs"})
+        self.assertEqual(step, {"type": "Step", "instruction": "输出 from abs", "step_index": 0})
         done = rt.next_step("s7")
         self.assertEqual(done["type"], "Finished")
 
     def test_call_callee_uses_own_mode_script(self) -> None:
-        callee = self.root / "callee_script.arp"
+        callee = self.root / "callee_script.rail"
         callee.write_text(
-            "if True:\n"
+            "if is_raining:\n"
             "  输出 from script callee\n",
             encoding="utf-8",
         )
-        entry = self.root / "entry_seq_call_script.arp"
+        entry = self.root / "entry_seq_call_script.rail"
         entry.write_text(f'include "{callee.resolve()}"\n', encoding="utf-8")
 
         rt = RailRunRuntime(entry, self.sessions)
         rt.init_session("s8")
         branch = rt.next_step("s8")
         self.assertEqual(branch["type"], "Branch")
-        self.assertIn("True", branch["instruction"])
+        self.assertIn("is_raining", branch["instruction"])
         step = rt.next_step("s8", branch_value=True, branch_present=True)
-        self.assertEqual(step, {"type": "Step", "instruction": "输出 from script callee"})
+        self.assertEqual(step, {"type": "Step", "instruction": "输出 from script callee", "step_index": 1})
         done = rt.next_step("s8")
         self.assertEqual(done["type"], "Finished")
 
     def test_include_callee_with_multiple_steps(self) -> None:
-        callee = self.root / "callee_multi.arp"
+        callee = self.root / "callee_multi.rail"
         callee.write_text("输出 first\n输出 second\n", encoding="utf-8")
-        entry = self.root / "entry_seq_include_multi.arp"
+        entry = self.root / "entry_seq_include_multi.rail"
         entry.write_text(f'include "{callee.resolve()}"\n', encoding="utf-8")
 
         rt = RailRunRuntime(entry, self.sessions)
         rt.init_session("s9")
         step1 = rt.next_step("s9")
-        self.assertEqual(step1, {"type": "Step", "instruction": "输出 first"})
+        self.assertEqual(step1, {"type": "Step", "instruction": "输出 first", "step_index": 0})
         step2 = rt.next_step("s9")
-        self.assertEqual(step2, {"type": "Step", "instruction": "输出 second"})
+        self.assertEqual(step2, {"type": "Step", "instruction": "输出 second", "step_index": 1})
         done = rt.next_step("s9")
         self.assertEqual(done["type"], "Finished")
 
@@ -188,8 +221,9 @@ class RuntimeContractTests(unittest.TestCase):
         rt.init_session("s10")
         resp = rt.next_step("s10")
         self.assertEqual(resp["type"], "For")
+        self.assertEqual(resp["step_index"], 0)
         step = rt.next_step("s10")
-        self.assertEqual(step, {"type": "Step", "instruction": "A-0"})
+        self.assertEqual(step, {"type": "Step", "instruction": "A-0", "step_index": 1})
 
     def test_for_items_expr_invalid_returns_validation_error(self) -> None:
         cfg = self.root / "for-invalid-cfg.json"

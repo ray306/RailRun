@@ -6,9 +6,10 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 
-class ArpCompileError(Exception):
+class RailCompileError(Exception):
     def __init__(
         self,
         message: str,
@@ -86,7 +87,7 @@ def _strip_comment(line: str) -> str:
 def _parse_indent(raw_line: str) -> tuple[int, str]:
     indent = len(raw_line) - len(raw_line.lstrip(" "))
     if raw_line[:indent].count("\t") > 0:
-        raise ArpCompileError("不支持 tab 缩进，请改为空格缩进")
+        raise RailCompileError("不支持 tab 缩进，请改为空格缩进")
     return indent, raw_line[indent:]
 
 
@@ -107,7 +108,7 @@ def _read_guidance(lines: list[str], start: int, origin_file: Path) -> tuple[str
             return "\n".join(parts).strip(), i + 1
         parts.append(ln.rstrip("\n"))
         i += 1
-    raise ArpCompileError("三引号未闭合", origin_file, start + 1)
+    raise RailCompileError("三引号未闭合", origin_file, start + 1)
 
 
 def _split_args(args_text: str) -> list[str]:
@@ -165,7 +166,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if indent < base_indent:
             break
         if indent > base_indent:
-            raise ArpCompileError("缩进不合法", file, i + 1)
+            raise RailCompileError("缩进不合法", file, i + 1)
         stmt_text, next_i = _collect_logical_statement(lines, i, base_indent)
         norm = _normalize_colon(stmt_text.strip())
         no_comment = _strip_comment(norm).rstrip()
@@ -183,7 +184,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment.startswith("include "):
             m = re.match(r"""^include\s+(['"])(.+?)\1$""", no_comment)
             if not m:
-                raise ArpCompileError("include 语法错误", file, i + 1)
+                raise RailCompileError("include 语法错误", file, i + 1)
             stmts.append(Stmt(kind="include", origin=origin, include_path=m.group(2)))
             i = next_i
             continue
@@ -191,7 +192,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment.startswith("def ") and no_comment.endswith(":"):
             m = re.match(r"^def\s+([^\s(]+)\((.*)\):$", no_comment)
             if not m:
-                raise ArpCompileError("def 语法错误", file, i + 1)
+                raise RailCompileError("def 语法错误", file, i + 1)
             name = m.group(1)
             raw_params = m.group(2).strip()
             params = [] if not raw_params else [x.strip() for x in _split_args(raw_params)]
@@ -203,7 +204,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment == "step:":
             step_items, i2 = _split_step_block_items(lines, i + 1, base_indent, file)
             if not step_items:
-                raise ArpCompileError("step 不能为空", file, i + 1)
+                raise RailCompileError("step 不能为空", file, i + 1)
             stmts.extend(step_items)
             i = i2
             continue
@@ -211,7 +212,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment == "ask:":
             text_block, i2 = _collect_text_block(lines, i + 1, base_indent)
             if not text_block:
-                raise ArpCompileError("ask 不能为空", file, i + 1)
+                raise RailCompileError("ask 不能为空", file, i + 1)
             stmts.append(Stmt(kind="ask", origin=origin, text=text_block))
             i = i2
             continue
@@ -219,7 +220,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment.startswith("if ") and no_comment.endswith(":"):
             cond = no_comment[3:-1].strip()
             if not cond:
-                raise ArpCompileError("if 条件为空", file, i + 1)
+                raise RailCompileError("if 条件为空", file, i + 1)
             body, i2 = _parse_child_scope(lines, i + 1, base_indent, file)
             if_stmt = Stmt(kind="if", origin=origin, cond=cond, body=body)
             i = i2
@@ -252,7 +253,7 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment.startswith("while ") and no_comment.endswith(":"):
             cond = no_comment[6:-1].strip()
             if not cond:
-                raise ArpCompileError("while 条件为空", file, i + 1)
+                raise RailCompileError("while 条件为空", file, i + 1)
             body, i2 = _parse_child_scope(lines, i + 1, base_indent, file)
             stmts.append(Stmt(kind="while", origin=origin, cond=cond, body=body))
             i = i2
@@ -261,11 +262,11 @@ def _parse_scope(lines: list[str], start: int, base_indent: int, file: Path) -> 
         if no_comment.startswith("for ") and no_comment.endswith(":"):
             m = re.match(r"^for\s+([^\s]+)\s+in\s+(.+):$", no_comment, re.S)
             if not m:
-                raise ArpCompileError("for 语法错误", file, i + 1)
+                raise RailCompileError("for 语法错误", file, i + 1)
             iter_var = m.group(1).strip()
             iter_expr = m.group(2).strip()
             if not iter_var or not iter_expr:
-                raise ArpCompileError("for 语法错误：缺少迭代变量或迭代源", file, i + 1)
+                raise RailCompileError("for 语法错误：缺少迭代变量或迭代源", file, i + 1)
             body, i2 = _parse_child_scope(lines, i + 1, base_indent, file)
             stmts.append(Stmt(kind="for", origin=origin, iter_var=iter_var, iter_expr=iter_expr, body=body))
             i = i2
@@ -499,8 +500,8 @@ class FuncDef:
     origin: Origin
 
 
-class ArpCompiler:
-    def __init__(self) -> None:
+class RailCompiler:
+    def __init__(self, consts: dict[str, Any] = None) -> None:
         self.nodes: dict[str, dict] = {}
         self.next_id = 0
         self.sources: dict[str, float] = {}
@@ -510,24 +511,154 @@ class ArpCompiler:
         self._synthetic_counter = 0
         self.warnings: list[dict] = []
         self._warning_keys: set[tuple[str, int, str]] = set()
+        self.invocation_consts = consts or {}
+        self.default_consts: dict[str, Any] = {}
+        self.merged_consts: dict[str, Any] = {}
 
     def alloc(self) -> str:
         nid = str(self.next_id)
         self.next_id += 1
         return nid
 
+    def _evaluate_ast_node(self, node: Any) -> Any:
+        import ast
+        if isinstance(node, ast.Name):
+            if node.id in self.merged_consts:
+                return self.merged_consts[node.id]
+            if node.id == "True":
+                return True
+            if node.id == "False":
+                return False
+            if node.id == "None":
+                return None
+            raise NameError(f"Name {node.id} not defined")
+        
+        # Support for Constant in Python 3.8+
+        if hasattr(ast, "Constant") and isinstance(node, ast.Constant):
+            return node.value
+            
+        # Support for older Python versions
+        if hasattr(ast, "Num") and isinstance(node, ast.Num):
+            return node.n
+        if hasattr(ast, "Str") and isinstance(node, ast.Str):
+            return node.s
+        if hasattr(ast, "NameConstant") and isinstance(node, ast.NameConstant):
+            return node.value
+            
+        if isinstance(node, ast.UnaryOp):
+            operand = self._evaluate_ast_node(node.operand)
+            if isinstance(node.op, ast.Not):
+                return not operand
+            elif isinstance(node.op, ast.UAdd):
+                return +operand
+            elif isinstance(node.op, ast.USub):
+                return -operand
+            raise TypeError("Unsupported UnaryOp")
+            
+        if isinstance(node, ast.BinOp):
+            left = self._evaluate_ast_node(node.left)
+            right = self._evaluate_ast_node(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            elif isinstance(node.op, ast.Sub):
+                return left - right
+            elif isinstance(node.op, ast.Mult):
+                return left * right
+            elif isinstance(node.op, ast.Div):
+                return left / right
+            raise TypeError("Unsupported BinOp")
+            
+        if isinstance(node, ast.BoolOp):
+            values = [self._evaluate_ast_node(val) for val in node.values]
+            if isinstance(node.op, ast.And):
+                return all(values)
+            elif isinstance(node.op, ast.Or):
+                return any(values)
+            raise TypeError("Unsupported BoolOp")
+            
+        if isinstance(node, ast.Compare):
+            left = self._evaluate_ast_node(node.left)
+            right = self._evaluate_ast_node(node.comparators[0])
+            op = node.ops[0]
+            if isinstance(op, ast.Eq):
+                return left == right
+            elif isinstance(op, ast.NotEq):
+                return left != right
+            elif isinstance(op, ast.Lt):
+                return left < right
+            elif isinstance(op, ast.LtE):
+                return left <= right
+            elif isinstance(op, ast.Gt):
+                return left > right
+            elif isinstance(op, ast.GtE):
+                return left >= right
+            raise TypeError("Unsupported Compare")
+            
+        raise TypeError("Unsupported AST node")
+
+    def _evaluate_expr(self, expr_str: str) -> tuple[bool, Any]:
+        import ast
+        try:
+            tree = ast.parse(expr_str, mode='eval')
+            val = self._evaluate_ast_node(tree.body)
+            return True, val
+        except Exception:
+            return False, None
+
     def parse_file(self, path: Path) -> list[Stmt]:
         rp = path.resolve()
         if rp in self.include_stack:
             chain = " -> ".join(str(x) for x in (self.include_stack + [rp]))
-            raise ArpCompileError(f"include 循环引用: {chain}")
+            raise RailCompileError(f"include 循环引用: {chain}")
         if not rp.exists():
-            raise ArpCompileError("include 文件不存在", rp, 1)
+            raise RailCompileError("include 文件不存在", rp, 1)
         self.include_stack.append(rp)
         rel = self._to_relative(rp)
         self.sources[rel] = rp.stat().st_mtime
         text = rp.read_text(encoding="utf-8")
         lines = text.splitlines()
+
+        # Parse params(...) signature at the very top of the root file
+        if len(self.include_stack) == 1:
+            params_line_idx = -1
+            default_consts = {}
+            for idx, line in enumerate(lines):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if stripped.startswith("#"):
+                    continue
+                if stripped.startswith("params(") and stripped.endswith(")"):
+                    params_line_idx = idx
+                    args_text = stripped[7:-1].strip()
+                    if args_text:
+                        parts = _split_args(args_text)
+                        for p in parts:
+                            if "=" in p:
+                                k, v = p.split("=", 1)
+                                k = k.strip()
+                                v = v.strip()
+                                if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
+                                    v = v[1:-1]
+                                elif v.lower() == "true":
+                                    v = True
+                                elif v.lower() == "false":
+                                    v = False
+                                else:
+                                    try:
+                                        if "." in v:
+                                            v = float(v)
+                                        else:
+                                            v = int(v)
+                                    except ValueError:
+                                        pass
+                                default_consts[k] = v
+                break
+            if params_line_idx != -1:
+                self.default_consts.update(default_consts)
+                # Clear the signature line but preserve line numbers
+                lines[params_line_idx] = ""
+
         stmts, _ = _parse_scope(lines, 0, 0, rp)
         expanded = self._expand_includes_in_stmts(stmts, rp)
         self.include_stack.pop()
@@ -541,9 +672,9 @@ class ArpCompiler:
                 target = inc if inc.is_absolute() else (base_file.parent / inc)
                 try:
                     out.extend(self.parse_file(target))
-                except ArpCompileError as e:
+                except RailCompileError as e:
                     ref = f"{s.origin.file}:{s.origin.line}"
-                    raise ArpCompileError(e.message, e.file, e.line, [ref] + e.references) from e
+                    raise RailCompileError(e.message, e.file, e.line, [ref] + e.references) from e
                 continue
 
             # Recursively expand includes inside nested blocks, regardless of runtime control flow.
@@ -661,26 +792,26 @@ class ArpCompiler:
                 seen_kw = True
             else:
                 if seen_kw:
-                    raise ArpCompileError(
+                    raise RailCompileError(
                         f"函数 {fn.name} 参数解析失败：命名参数后出现裸值片段。请为含逗号的参数值加引号或三引号。",
                         call.origin.file,
                         call.origin.line,
                     )
                 pos.append(p.strip())
         if len(pos) > len(fn.params):
-            raise ArpCompileError(f"函数 {fn.name} 参数过多", call.origin.file, call.origin.line)
+            raise RailCompileError(f"函数 {fn.name} 参数过多", call.origin.file, call.origin.line)
         env: dict[str, str] = {}
         for idx, p in enumerate(pos):
             env[fn.params[idx]] = p
         for k, v in kw.items():
             if k not in fn.params:
-                raise ArpCompileError(f"函数 {fn.name} 未定义参数: {k}", call.origin.file, call.origin.line)
+                raise RailCompileError(f"函数 {fn.name} 未定义参数: {k}", call.origin.file, call.origin.line)
             if k in env:
-                raise ArpCompileError(f"函数 {fn.name} 参数重复赋值: {k}", call.origin.file, call.origin.line)
+                raise RailCompileError(f"函数 {fn.name} 参数重复赋值: {k}", call.origin.file, call.origin.line)
             env[k] = v
         for p in fn.params:
             if p not in env:
-                raise ArpCompileError(f"函数 {fn.name} 缺少参数: {p}", call.origin.file, call.origin.line)
+                raise RailCompileError(f"函数 {fn.name} 缺少参数: {p}", call.origin.file, call.origin.line)
         return env
 
     def _compile_stmt_list(
@@ -697,10 +828,48 @@ class ArpCompiler:
         return next_id
 
     def _compile_if(self, s: Stmt, after: str, loop_head: str | None, loop_exit: str | None, call_stack: list[str]) -> str:
-        chain: list[tuple[str, list[Stmt], Origin]] = [(s.cond, s.body, s.origin)] + s.elifs
-        fallback = self._compile_stmt_list(s.orelse, after, loop_head, loop_exit, call_stack) if s.orelse else after
+        # Build the initial chain of branches: (condition_str_or_None, body, origin)
+        raw_chain: list[tuple[str | None, list[Stmt], Origin]] = []
+        raw_chain.append((s.cond, s.body, s.origin))
+        for cond, body, origin in s.elifs:
+            raw_chain.append((cond, body, origin))
+        if s.orelse:
+            raw_chain.append((None, s.orelse, s.origin))
+
+        # Filter the chain using compile-time constants
+        filtered: list[tuple[str | None, list[Stmt], Origin]] = []
+        for cond, body, origin in raw_chain:
+            if cond is None:
+                filtered.append((None, body, origin))
+                break
+            
+            is_const, val = self._evaluate_expr(cond)
+            if is_const:
+                if val:
+                    filtered.append((None, body, origin))
+                    break
+                else:
+                    continue
+            else:
+                filtered.append((cond, body, origin))
+
+        # Compile the filtered chain
+        if not filtered:
+            return after
+
+        if filtered[0][0] is None:
+            return self._compile_stmt_list(filtered[0][1], after, loop_head, loop_exit, call_stack)
+
+        if filtered[-1][0] is None:
+            fallback_body = filtered[-1][1]
+            fallback = self._compile_stmt_list(fallback_body, after, loop_head, loop_exit, call_stack)
+            filtered_elifs = filtered[1:-1]
+        else:
+            fallback = after
+            filtered_elifs = filtered[1:]
+
         on_false = fallback
-        for cond, body, origin in reversed(chain):
+        for cond, body, origin in reversed(filtered_elifs):
             branch_id = self.alloc()
             on_true = self._compile_stmt_list(body, after, loop_head, loop_exit, call_stack)
             self.nodes[branch_id] = {
@@ -711,7 +880,18 @@ class ArpCompiler:
                 "meta": {"file": self._meta_file(origin.file), "line": origin.line},
             }
             on_false = branch_id
-        return on_false
+
+        cond0, body0, origin0 = filtered[0]
+        branch_id = self.alloc()
+        on_true = self._compile_stmt_list(body0, after, loop_head, loop_exit, call_stack)
+        self.nodes[branch_id] = {
+            "type": "Branch",
+            "condition": cond0,
+            "on_true": on_true,
+            "on_false": on_false,
+            "meta": {"file": self._meta_file(origin0.file), "line": origin0.line},
+        }
+        return branch_id
 
     def _compile_stmt(
         self,
@@ -795,11 +975,11 @@ class ArpCompiler:
             return hid
         if s.kind == "break":
             if loop_exit is None:
-                raise ArpCompileError("break 出现在循环外", s.origin.file, s.origin.line)
+                raise RailCompileError("break 出现在循环外", s.origin.file, s.origin.line)
             return loop_exit
         if s.kind == "continue":
             if loop_head is None:
-                raise ArpCompileError("continue 出现在循环外", s.origin.file, s.origin.line)
+                raise RailCompileError("continue 出现在循环外", s.origin.file, s.origin.line)
             return loop_head
         if s.kind == "return":
             return after
@@ -811,29 +991,99 @@ class ArpCompiler:
                     "step 块内函数调用已自动拆分为独立调用并展开。",
                 )
             if s.name not in self.functions:
-                raise ArpCompileError(f"未定义函数: {s.name}", s.origin.file, s.origin.line)
+                raise RailCompileError(f"未定义函数: {s.name}", s.origin.file, s.origin.line)
             if s.name in call_stack:
                 chain = " -> ".join(call_stack + [s.name])
-                raise ArpCompileError(f"函数调用循环引用: {chain}", s.origin.file, s.origin.line)
+                raise RailCompileError(f"函数调用循环引用: {chain}", s.origin.file, s.origin.line)
             fn = self.functions[s.name]
             env = self._parse_call_args(s, fn)
             instantiated = [self._instantiate_stmt(x, env) for x in fn.body]
             body = self._register_defs(instantiated)
             try:
                 return self._compile_stmt_list(body, after, loop_head, loop_exit, call_stack + [s.name])
-            except ArpCompileError as e:
+            except RailCompileError as e:
                 ref = f"{s.origin.file}:{s.origin.line}"
-                raise ArpCompileError(e.message, e.file, e.line, [ref] + e.references) from e
+                raise RailCompileError(e.message, e.file, e.line, [ref] + e.references) from e
         if s.kind in {"include", "def"}:
             return after
-        raise ArpCompileError(f"不支持的语句类型: {s.kind}", s.origin.file, s.origin.line)
+        raise RailCompileError(f"不支持的语句类型: {s.kind}", s.origin.file, s.origin.line)
+
+    def _renumber_nodes(self, entry: str, nodes: dict) -> tuple[str, dict]:
+        """BFS from entry, reassign node IDs in traversal order (1, 2, 3, …).
+        Finished nodes are placed last. Returns (new_entry, new_nodes)."""
+        from collections import deque
+
+        visited: list[str] = []
+        seen: set[str] = set()
+        queue: deque[str] = deque([entry])
+        # Collect Finished nodes separately so they always come last.
+        finished_ids: list[str] = []
+
+        while queue:
+            nid = queue.popleft()
+            if nid in seen:
+                continue
+            seen.add(nid)
+            node = nodes.get(nid)
+            if node is None:
+                continue
+            if node.get("type") == "Finished":
+                finished_ids.append(nid)
+            else:
+                visited.append(nid)
+            # Enqueue successors in forward order.
+            for key in ("next", "on_true", "on_false", "on_iterate", "on_done"):
+                succ = node.get(key)
+                if succ is not None and succ not in seen:
+                    queue.append(succ)
+
+        ordered = visited + finished_ids
+
+        # Build old -> new mapping (1-based).
+        old_to_new: dict[str, str] = {old: str(i + 1) for i, old in enumerate(ordered)}
+
+        def remap(v: str | None) -> str | None:
+            if v is None:
+                return None
+            return old_to_new.get(v, v)
+
+        new_nodes: dict[str, dict] = {}
+        for old_id in ordered:
+            new_id = old_to_new[old_id]
+            old_node = nodes[old_id]
+            new_node = dict(old_node)
+            for key in ("next", "on_true", "on_false", "on_iterate", "on_done"):
+                if key in new_node:
+                    new_node[key] = remap(new_node[key])
+            new_nodes[new_id] = new_node
+
+        new_entry = old_to_new.get(entry, entry)
+        return new_entry, new_nodes
 
     def compile(self, input_path: Path) -> dict:
+        self.default_consts = {}
+        self.merged_consts = {}
+        
         stmts = self.parse_file(input_path.resolve())
+        
+        # Validate that invocation constants match defined params
+        for k in self.invocation_consts:
+            if k not in self.default_consts:
+                raise RailCompileError(
+                    f"未定义编译期参数: {k}。可用参数: {list(self.default_consts.keys())}"
+                )
+        
+        # Merge invocation consts over default consts
+        self.merged_consts = {**self.default_consts, **self.invocation_consts}
+        
         executable = self._register_defs(stmts)
         finished_id = self.alloc()
         self.nodes[finished_id] = {"type": "Finished", "instruction": "所有指令已执行完毕。结束输出。"}
         entry = self._compile_stmt_list(executable, finished_id, None, None, [])
+
+        # Renumber nodes so IDs align with execution order (entry == "1").
+        entry, self.nodes = self._renumber_nodes(entry, self.nodes)
+
         return {
             "protocol": "next-step-cfg/v1",
             "entry": entry,
@@ -846,15 +1096,38 @@ class ArpCompiler:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Compile ARP into CFG JSON")
-    parser.add_argument("--input", required=True, help="Input .arp file")
+    parser = argparse.ArgumentParser(description="Compile RAIL into CFG JSON")
+    parser.add_argument("--input", required=True, help="Input .rail file")
     parser.add_argument("--output", required=True, help="Output .json file")
+    parser.add_argument("--const", action="append", default=[], help="Compile-time constants (e.g. name=value)")
     args = parser.parse_args()
 
-    compiler = ArpCompiler()
+    consts = {}
+    for item in args.const:
+        if "=" in item:
+            k, v = item.split("=", 1)
+            k = k.strip()
+            v = v.strip()
+            if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
+                v = v[1:-1]
+            elif v.lower() == "true":
+                v = True
+            elif v.lower() == "false":
+                v = False
+            else:
+                try:
+                    if "." in v:
+                        v = float(v)
+                    else:
+                        v = int(v)
+                except ValueError:
+                    pass
+            consts[k] = v
+
+    compiler = RailCompiler(consts=consts)
     try:
         cfg = compiler.compile(Path(args.input))
-    except ArpCompileError as e:
+    except RailCompileError as e:
         err: dict[str, object] = {
             "type": "CompileError",
             "错误原因": e.message,

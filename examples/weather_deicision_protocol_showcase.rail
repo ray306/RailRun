@@ -1,7 +1,7 @@
 """
 Weather Protocol Showcase
 覆盖：Guidance / ask / def / call / if-elif-else / while / break / continue / for / 模板变量
-说明：include 用法请查看 weather_deicision_includes_sub.arp。
+说明：include 用法请查看 weather_deicision_includes_sub.rail。
 """
 
 

@@ -1,3 +1,5 @@
+params(no_pause=false, auto_rewrite=false)
+
 """
 我们可以把在研究/日常工作中的产生各种知识的过程，看作是一个把“源知识”翻译成为任务所需的“目标知识”的过程。
 基于这个思路建立的 Knowledge2Knowledge (K2K) 是一个通用型的程序，用于流程化生成任何知识。
@@ -85,21 +87,25 @@ def 压力测试(defender, debate_mode):
     
     角色扮演(role=评审官⚖️, goal=思考前面的内容和【魔鬼😈】的所有攻击，对【魔鬼😈】的攻击给出理性的回复)
 
+    if auto_rewrite:
+        角色扮演(role={{defender}}, goal=根据【魔鬼😈】的挑战和【评审官⚖️】的理性回复，重新输出一份更加完美和健壮的内容)
+
 
 # 这里你需要暂停输出，反思并让我检查前面的工作是否正常完成。
 def 暂停点():
 
-    （不用真的暂停，只是输出文字）输出 "> ⏸️ 暂停点" 
+    if not no_pause:
+        （不用真的暂停，只是输出文字）输出 "> ⏸️ 暂停点" 
 
-    if 有需要甲方补充的信息:
-        输出 所需信息
+        if 有需要甲方补充的信息:
+            输出 所需信息
 
-    ask: 
-        等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。
-    
-    """
-    注意，你的上下文还很长，而且你还有压缩上下文的功能，不会耗尽上下文。你不要惜字如金，而要从头到尾都保持自然的输出。
-    """
+        ask: 
+            等待你的确认。请回复「继续」或意见，之后我才会执行下一个Step。
+        
+        """
+        注意，你的上下文还很长，而且你还有压缩上下文的功能，不会耗尽上下文。你不要惜字如金，而要从头到尾都保持自然的输出。
+        """
 
 # 使用特定角色进行一次微型K2K分析
 def 嵌套调用(sub_task, role):
@@ -118,29 +124,38 @@ def 嵌套调用(sub_task, role):
 # 进入前置分析模块
 
 if 源知识不够清晰（歧义、空洞、存在大量问题）:
-    include "modules/chaotic-divergent-thinking.arp" # 混沌探索
+    include "modules/chaotic-divergent-thinking.rail" # 混沌探索
+    暂停点()
 
-include "modules/task-brief.arp" # 任务简报
+include "modules/task-brief.rail" # 任务简报
+暂停点()
 
-include "modules/source-analysis.arp" # 现况分析
+include "modules/source-analysis.rail" # 现况分析
+暂停点()
 
-include "modules/gap-analysis.arp" # 差距分析
+include "modules/gap-analysis.rail" # 差距分析
+暂停点()
 
 # 进入推演流程
 
 if 源知识不足够完成任务，需要补充外部信息:
-    include "modules/extra-searching.arp" # 外部信息获取
+    include "modules/extra-searching.rail" # 外部信息获取
+    暂停点()
 
 if 探索导向未完成，需要发散性探索尝试填补源知识与任务需求之间的空隙 and not 源知识已经完全足以完成任务，且无关内容难以忽略、可能造成明显干扰:
-    include "modules/divergent-thinking.arp" # 发散性探索
+    include "modules/divergent-thinking.rail" # 发散性探索
+    暂停点()
 
 if 任务需要清晰的脉络、洞见 and 源知识中缺少清晰的脉络:
-    include "modules/insight-generation.arp" # 洞见提炼
+    include "modules/insight-generation.rail" # 洞见提炼
+    暂停点()
 
 # 进入整合输出模块
 
-include "modules/strategy-formulation.arp" # 构建策略
+include "modules/strategy-formulation.rail" # 构建策略
+暂停点()
 
-include "modules/knowledge-reorganization.arp" # 知识重组
+include "modules/knowledge-reorganization.rail" # 知识重组
+暂停点()
 
-include "modules/production-finalize.arp" # 生成目标知识
+include "modules/production-finalize.rail" # 生成目标知识

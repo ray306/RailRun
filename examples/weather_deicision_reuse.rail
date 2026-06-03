@@ -15,7 +15,7 @@ def summarize_decision(city):
     今日出行建议：<建议>（{{city}}的score是<分数>，原因：<一句话>）
 
 # 外部子流程将在这里被展开
-include "./weather_fetch_sub.arp"
+include "./weather_fetch_sub.rail"
 
 step:
   基于刚才提取的天气数据计算 umbrella_score（只计算，不做流程分支）：
