@@ -168,6 +168,14 @@
             background-color: var(--accent-green);
         }
 
+        header .status-dot.offline {
+            background-color: var(--accent-red);
+        }
+
+        header .status-dot.pending {
+            background-color: var(--accent-orange);
+        }
+
         .container {
             display: flex;
             flex: 1;
@@ -336,15 +344,6 @@
             border-left: 3px solid var(--accent-blue);
         }
 
-        .session-status-meta {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 0.3rem;
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
         .session-proc {
             font-size: 0.8rem;
             color: var(--text-secondary);
@@ -360,6 +359,7 @@
             flex-direction: column;
             gap: 1.5rem;
             min-width: 0;
+            min-height: 0;
         }
 
         .no-session {
@@ -413,6 +413,11 @@
             gap: 0.35rem;
         }
 
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
         .btn-primary {
             background-color: var(--accent-blue);
             color: white;
@@ -452,17 +457,74 @@
             background: var(--btn-secondary-hover-bg);
         }
 
+        .btn:disabled:hover {
+            opacity: 0.55;
+        }
+
         /* Detail Grid Layout */
         .detail-grid {
             display: grid;
             grid-template-columns: 1fr 1.2fr;
             gap: 1.5rem;
             flex: 1;
+            width: 100%;
+            align-items: stretch;
+            min-height: 0;
+        }
+
+        .detail-grid > .card {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
         }
 
         @media (max-width: 1024px) {
             .detail-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            header {
+                align-items: flex-start;
+                gap: 1rem;
+                flex-direction: column;
+            }
+
+            header > div {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 0.75rem !important;
+            }
+
+            .container {
+                flex-direction: column;
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .session-list {
+                max-height: 260px;
+            }
+
+            .main-content {
+                width: 100%;
+            }
+
+            .detail-grid {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 1rem;
+            }
+
+            .flow-container,
+            .trajectory-container {
+                max-height: none;
             }
         }
 
@@ -482,7 +544,9 @@
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
-            max-height: 600px;
+            flex: 1;
+            min-height: 360px;
+            max-height: none;
             overflow-y: auto;
         }
 
@@ -583,7 +647,9 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            max-height: 600px;
+            flex: 1;
+            min-height: 360px;
+            max-height: none;
             overflow-y: auto;
             padding-left: 0.75rem;
             position: relative;
@@ -681,7 +747,7 @@
             display: inline-block;
         }
 
-        /* Modal/Dialog for Branch resolving */
+        /* Branch decision status */
         .branch-resolver-box {
             background: var(--resolver-bg);
             border: 1px solid var(--resolver-border);
@@ -697,11 +763,6 @@
             font-weight: 600;
             color: var(--accent-orange);
             font-size: 0.95rem;
-        }
-
-        .branch-resolver-choices {
-            display: flex;
-            gap: 0.75rem;
         }
 
         /* Custom Modal and Toast Styles */
@@ -764,7 +825,7 @@
     <div id="custom-confirm-overlay" class="custom-confirm-overlay">
         <div class="custom-confirm-box">
             <h3 id="confirm-title" style="font-size: 1.1rem; font-weight: 600;">操作确认</h3>
-            <p id="confirm-msg" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;"></p>
+            <p id="confirm-msg" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-line;"></p>
             <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
                 <button class="btn btn-secondary" id="confirm-btn-cancel">取消</button>
                 <button class="btn btn-primary" id="confirm-btn-ok">确定</button>
@@ -780,12 +841,15 @@
         <h1>RailRun 控制台</h1>
         <div style="display: flex; align-items: center; gap: 1.5rem;">
             <div class="status-indicator">
-                <span class="status-dot"></span>
-                <span>本地守护进程正常监视中 (HTTP 8799)</span>
+                <span class="status-dot pending" id="service-status-dot"></span>
+                <span id="service-status-text">正在检测本地控制台服务</span>
             </div>
+            <button id="service-shutdown" class="btn btn-danger" onclick="triggerServiceShutdown()" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; font-weight: 500;" disabled>
+                关闭控制台服务
+            </button>
             <button id="theme-toggle" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; font-weight: 500;">
-                <span id="theme-toggle-icon">🌙</span>
-                <span id="theme-toggle-text">深色模式</span>
+                <span id="theme-toggle-icon">☀️</span>
+                <span id="theme-toggle-text">浅色模式</span>
             </button>
         </div>
     </header>
@@ -825,15 +889,11 @@
                 </div>
             </div>
 
-            <!-- Branch manual resolver panel -->
+            <!-- Branch decision status panel -->
             <div class="card" id="branch-resolver" style="display: none;">
                 <div class="branch-resolver-box">
-                    <div class="branch-resolver-title">当前会话正在等待分支判断结果，请协助手动做出决策：</div>
+                    <div class="branch-resolver-title">当前会话正在进行分支判断</div>
                     <p id="branch-condition-text" style="font-size: 0.9rem; line-height: 1.4; font-weight: 500;"></p>
-                    <div class="branch-resolver-choices">
-                        <button class="btn btn-primary" onclick="resolveBranch(true)" style="background-color: var(--accent-green);">条件成立 (True)</button>
-                        <button class="btn btn-secondary" onclick="resolveBranch(false)" style="background-color: var(--accent-red); border-color: transparent; color: white;">条件不成立 (False)</button>
-                    </div>
                 </div>
             </div>
 
@@ -865,6 +925,7 @@
         let currentSessionId = null;
         let currentSessionStatus = null;
         let autoRefreshInterval = null;
+        let serviceOnline = false;
 
         // Theme switching logic
         function setTheme(theme) {
@@ -873,12 +934,12 @@
             const toggleIcon = document.getElementById('theme-toggle-icon');
             const toggleText = document.getElementById('theme-toggle-text');
             if (toggleIcon && toggleText) {
-                if (theme === 'dark') {
-                    toggleIcon.textContent = '☀️';
-                    toggleText.textContent = '浅色模式';
-                } else {
+                if (theme === 'light') {
                     toggleIcon.textContent = '🌙';
                     toggleText.textContent = '深色模式';
+                } else {
+                    toggleIcon.textContent = '☀️';
+                    toggleText.textContent = '浅色模式';
                 }
             }
         }
@@ -899,9 +960,11 @@
             }
 
             fetchSessions();
+            checkServiceStatus();
             // Auto-refresh: session list every 5s (perceptible but not overwhelming)
             // Active session detail refreshes at the same cadence
             autoRefreshInterval = setInterval(() => {
+                checkServiceStatus();
                 fetchSessions();
                 if (currentSessionId) {
                     fetchSessionDetail(currentSessionId, false);
@@ -911,14 +974,57 @@
 
         // Status display config
         const STATUS_CONFIG = {
-            running:      { label: '运行中',   icon: '▶',  cls: 'running',      metaDesc: '正在执行任务' },
-            done:         { label: '已完成',   icon: '✓',  cls: 'done',         metaDesc: '任务正常结束' },
-            terminated:   { label: '已终止',   icon: '✕',  cls: 'terminated',   metaDesc: '未完成，已被强制停止' },
-            interference: { label: '暂停中',   icon: '⏸',  cls: 'interference', metaDesc: '等待人工介入' },
+            running:      { label: '运行中', icon: '▶', cls: 'running' },
+            done:         { label: '已完成', icon: '✓', cls: 'done' },
+            terminated:   { label: '已终止', icon: '✕', cls: 'terminated' },
+            interference: { label: '暂停中', icon: '⏸', cls: 'interference' },
         };
 
         function getStatusConfig(status) {
-            return STATUS_CONFIG[status] || { label: status, icon: '?', cls: status, metaDesc: '' };
+            return STATUS_CONFIG[status] || { label: status, icon: '?', cls: status };
+        }
+
+        function setServiceStatus(state, text) {
+            const dot = document.getElementById('service-status-dot');
+            const label = document.getElementById('service-status-text');
+            const shutdownBtn = document.getElementById('service-shutdown');
+            if (!dot || !label || !shutdownBtn) return;
+
+            dot.classList.remove('offline', 'pending');
+            if (state === 'offline') {
+                dot.classList.add('offline');
+                serviceOnline = false;
+                shutdownBtn.disabled = true;
+            } else if (state === 'pending') {
+                dot.classList.add('pending');
+                shutdownBtn.disabled = true;
+            } else {
+                serviceOnline = true;
+                shutdownBtn.disabled = false;
+            }
+            label.textContent = text;
+        }
+
+        function checkServiceStatus() {
+            fetch('/api/rpc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'ping' })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                if (data.type === 'ok') {
+                    setServiceStatus('online', '本地控制台服务在线');
+                } else {
+                    setServiceStatus('offline', '本地控制台服务无响应');
+                }
+            })
+            .catch(() => {
+                setServiceStatus('offline', '本地控制台服务未连接');
+            });
         }
 
         // Get sessions
@@ -928,7 +1034,10 @@
                 .then(data => {
                     renderSessionList(data.sessions);
                 })
-                .catch(err => console.error('Error fetching sessions:', err));
+                .catch(err => {
+                    console.error('Error fetching sessions:', err);
+                    setServiceStatus('offline', '本地控制台服务未连接');
+                });
         }
 
         // Render sessions in sidebar
@@ -953,7 +1062,6 @@
                             <span class="badge ${sc.cls}">${sc.icon} ${sc.label}</span>
                         </div>
                         <div class="session-proc" title="${s.procedure_path}">📄 ${baseName}</div>
-                        <div class="session-status-meta">${sc.metaDesc}</div>
                     </div>
                 `;
             });
@@ -1029,13 +1137,12 @@
                         pauseBtn.style.display = 'none';
                     }
 
-                    // Show or hide branch manual resolver
+                    // Show or hide branch decision status
                     const branchResolver = document.getElementById('branch-resolver');
                     if (sessionData.waiting_for_branch && sessionData.status === 'running') {
                         branchResolver.style.display = 'block';
-                        // Find current node instruction to show what condition we are evaluating
                         const branchLabel = document.getElementById('branch-condition-text');
-                        branchLabel.textContent = `正在等待条件求值。请判断条件是否满足以决定分支走势。`;
+                        branchLabel.textContent = `Agent 正在根据已执行结果判断条件是否满足，用户无需在控制台参与判断。`;
                     } else {
                         branchResolver.style.display = 'none';
                     }
@@ -1294,6 +1401,40 @@
             });
         }
 
+        function triggerServiceShutdown() {
+            if (!serviceOnline) return;
+            showConfirm('关闭控制台服务', '您确定要关闭本地 RailRun 控制台服务吗？').then(confirmed => {
+                if (confirmed) {
+                    shutdownService();
+                }
+            });
+        }
+
+        function shutdownService() {
+            const shutdownBtn = document.getElementById('service-shutdown');
+            shutdownBtn.disabled = true;
+            setServiceStatus('pending', '正在关闭控制台服务');
+            fetch('/api/rpc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'shutdown' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.type !== 'ok') {
+                    setServiceStatus('online', '本地控制台服务在线');
+                    showToast('关闭失败: ' + (data.message || '未知错误'), true);
+                    return;
+                }
+                showToast('控制台服务已关闭', false);
+                window.setTimeout(checkServiceStatus, 300);
+            })
+            .catch(err => {
+                showToast('关闭请求失败: ' + err, true);
+                checkServiceStatus();
+            });
+        }
+
         function triggerRewind(stepIndex) {
             if (!currentSessionId) return;
             showConfirm('跳转确认', `您确定要跳转/回滚状态机到步骤 #${stepIndex} 吗？`).then(confirmed => {
@@ -1301,12 +1442,6 @@
                     postRPC({ action: 'rewind', session: currentSessionId, step_index: stepIndex });
                 }
             });
-        }
-
-        // Resolve branch from resolver panel
-        function resolveBranch(val) {
-            if (!currentSessionId) return;
-            postRPC({ action: 'next', session: currentSessionId, branch_value: val });
         }
 
         function postRPC(payload) {

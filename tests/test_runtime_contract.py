@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import session_runtime
-from scripts.global_daemon import RailRunRuntime
+from scripts.base import RailRunRuntime
 
 
 class RuntimeContractTests(unittest.TestCase):
@@ -115,7 +115,7 @@ class RuntimeContractTests(unittest.TestCase):
         def call_next():
             results.append(rt.next_step("s4"))
 
-        with patch("scripts.global_daemon.advance_session", side_effect=slow_advance):
+        with patch("scripts.base.advance_session", side_effect=slow_advance):
             t1 = threading.Thread(target=call_next)
             t2 = threading.Thread(target=call_next)
             t1.start()

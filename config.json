@@ -1,8 +1,8 @@
 {
-  "use_daemon": false,
   "rails_alias_and_path": {
     "K2K": "examples/K2K/SKILL.rail",
     "simple_todo_flow": "examples/simple_todo_flow.rail",
-    "invest": "examples/company_value_chain_investment_quality.rail"
+    "invest": "examples/company_value_chain_investment_quality.rail",
+    "cypto": "examples/cypto_investment_quality.rail"
   }
 }

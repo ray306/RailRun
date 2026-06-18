@@ -10,16 +10,7 @@ from typing import Any
 
 from .rail_compiler import RailCompiler
 from .session_state import SessionState, now_str
-from .session_runtime import StepInput
-
-
-def _get_advance_session():
-    # Dynamically resolve advance_session to support mock patches in legacy unit tests
-    gd = sys.modules.get("scripts.global_daemon")
-    if gd and hasattr(gd, "advance_session"):
-        return gd.advance_session
-    from .session_runtime import advance_session
-    return advance_session
+from .session_runtime import StepInput, advance_session
 
 
 @contextlib.contextmanager
@@ -166,8 +157,6 @@ class RailRunRuntime:
         )
         decisions = self._history_branch_decisions(session.history)
         decision_offsets: dict[tuple[int, str], int] = {}
-        advance_fn = _get_advance_session()
-
         while int(replay.cursor.get("step_index", 0)) < target_step_index:
             if replay.status in {"done", "interference", "terminated"}:
                 raise ValueError("目标 step_index 超出当前会话可回放范围。")
@@ -183,7 +172,7 @@ class RailRunRuntime:
                     raise ValueError("回溯失败：缺少分支决策历史。")
                 branch_value = branch_values[offset]
                 decision_offsets[key] = offset + 1
-                _, replay = advance_fn(
+                _, replay = advance_session(
                     replay,
                     dag,
                     StepInput(branch_present=True, branch_value=branch_value),
@@ -191,7 +180,7 @@ class RailRunRuntime:
                 )
                 continue
 
-            _, replay = advance_fn(
+            _, replay = advance_session(
                 replay,
                 dag,
                 StepInput(branch_present=False, branch_value=None),
@@ -226,7 +215,7 @@ class RailRunRuntime:
                 return {
                     "type": "init",
                     "session": session_id,
-                    "instruction": "已分配session_id，请再次调用 next_step --session <id> 读取下一步。",
+                    "instruction": "已分配session_id，请再次调用 next_step --session <id> 读取下一步。请提示用户：如果需要查看可视化流程控制台，可在终端运行 `python next_step.py --ui` 并在浏览器中访问 http://127.0.0.1:8799/。",
                 }
         except RuntimeError as exc:
             if str(exc) == "SESSION_PARALLEL_CALL_BLOCKED":
@@ -237,7 +226,7 @@ class RailRunRuntime:
                 }
             raise
 
-    def next_step(self, session_id: str, branch_value: Any = None, branch_present: bool = False) -> dict[str, Any]:
+    def next_step(self, session_id: str, branch_value: Any = None, branch_present: bool = False, variables: dict[str, Any] = None) -> dict[str, Any]:
         session_file = self._session_file(session_id)
         try:
             with file_lock(str(session_file)):
@@ -265,11 +254,10 @@ class RailRunRuntime:
 
                 dag = self._load_dag()
                 try:
-                    advance_fn = _get_advance_session()
-                    resp, updated = advance_fn(
+                    resp, updated = advance_session(
                         session,
                         dag,
-                        StepInput(branch_present=branch_present, branch_value=branch_value),
+                        StepInput(branch_present=branch_present, branch_value=branch_value, variables=variables),
                         now_fn=now_str,
                     )
                     updated.retry_count = 0

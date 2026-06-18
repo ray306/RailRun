@@ -242,7 +242,7 @@
     },
     "27": {
       "type": "Step",
-      "instruction": "回顾之前得到的概率分布表格，先分析各种基本面信息以及估值锚对概率的影响，然后修正这些概率并输出。\n- 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n- 表格生成之后不进行更多分析，直接进入下一步",
+      "instruction": "回顾之前得到的概率分布表格\n- 先分析各种基本面信息以及估值锚对概率的影响\n- 然后修正这些概率并输出\n  - 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n- 表格生成之后不进行更多分析，直接进入下一步",
       "next": "28",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
@@ -255,7 +255,7 @@
       "next": "29",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 456
+        "line": 458
       }
     },
     "29": {
@@ -264,7 +264,7 @@
       "next": "30",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 476
+        "line": 478
       }
     },
     "30": {
@@ -273,34 +273,34 @@
       "next": "31",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 496
+        "line": 498
       }
     },
     "31": {
       "type": "Step",
-      "instruction": "回顾之前得到的概率分布表格，先分析各种事件对概率的影响，然后修正这些概率并输出。\n- 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n- 表格生成之后不进行更多分析，直接进入下一步",
+      "instruction": "回顾之前得到的概率分布表格\n- 先分析各种事件对概率的影响\n- 然后修正这些概率并输出。\n  - 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n- 表格生成之后不进行更多分析，直接进入下一步",
       "next": "32",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 506
+        "line": 508
       }
     },
     "32": {
       "type": "Step",
-      "instruction": "如果已经出现周期内可预期的情绪催化/压制比较明显，请先分析对概率的影响，然后修正概率（如果没有，这一步可跳过）。\n- 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n- 表格生成之后不进行更多分析，直接进入下一步",
+      "instruction": "如果已经出现周期内可预期的情绪催化/压制比较明显，\n- 先分析各种事件对概率的影响\n- 然后修正这些概率并输出。\n  - 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n- 表格生成之后不进行更多分析，直接进入下一步",
       "next": "33",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 511
+        "line": 515
       }
     },
     "33": {
       "type": "Step",
-      "instruction": "- 先考虑是否有其它重要的修正因素。如有，分析对概率的影响。\n- 然后正式给出不同价格小区间的概率分布的分析表格，包括区间、相对涨跌幅、触达概率、站稳概率、含义。\n  - 概率输出格式：n%；如果不确定性很大，也可以给出概率区间",
+      "instruction": "考虑是否有其它重要的修正因素。\n如有：\n- 分析对概率的影响。\n- 然后正式给出不同价格小区间的概率分布的分析表格，包括区间、相对涨跌幅、触达概率、站稳概率、含义。\n  - 概率输出格式：n%；如果不确定性很大，也可以给出概率区间\n如没有就跳过。",
       "next": "34",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 516
+        "line": 522
       }
     },
     "34": {
@@ -309,7 +309,7 @@
       "next": "35",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 521
+        "line": 529
       }
     },
     "35": {
@@ -318,7 +318,7 @@
       "next": "36",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 568
+        "line": 576
       }
     },
     "36": {
@@ -327,7 +327,7 @@
       "next": "37",
       "meta": {
         "file": "examples\\company_value_chain_investment_quality.rail",
-        "line": 586
+        "line": 594
       }
     },
     "37": {
@@ -337,7 +337,7 @@
   },
   "meta": {
     "sources": {
-      "examples\\company_value_chain_investment_quality.rail": 1780522270.7238846
+      "examples\\company_value_chain_investment_quality.rail": 1780688947.1611156
     },
     "warnings": []
   }

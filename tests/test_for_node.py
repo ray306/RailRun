@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from scripts.rail_compiler import RailCompiler
-from scripts.global_daemon import RailRunRuntime
+from scripts.base import RailRunRuntime
 
 
 class ForNodeTests(unittest.TestCase):

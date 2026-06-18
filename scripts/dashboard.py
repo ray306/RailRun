@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import socket
+import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
@@ -13,6 +15,8 @@ from .session_state import now_str
 
 # A beautiful single-file glassmorphic Web UI.
 # Load HTML page dynamically from the same folder
+RUNNING_SESSION_TIMEOUT_SECONDS = 10 * 60
+
 _index_html_path = Path(__file__).parent / "index.html"
 if _index_html_path.exists():
     HTML_PAGE = _index_html_path.read_text(encoding="utf-8")
@@ -20,17 +24,34 @@ else:
     HTML_PAGE = "<h1>Error: index.html not found</h1>"
 
 
-class DaemonHTTPHandler(BaseHTTPRequestHandler):
+class DashboardHTTPHandler(BaseHTTPRequestHandler):
     runtimes: dict[tuple[str, str, int, tuple[tuple[str, Any], ...]], RailRunRuntime] = {}
     session_to_runtime: dict[str, tuple[str, str, int, tuple[tuple[str, Any], ...]]] = {}
     manager_lock: threading.Lock = threading.Lock()
     session_locks: dict[str, threading.Lock] = {}
     session_locks_guard: threading.Lock = threading.Lock()
     
-    default_procedure_path: Path
+    default_procedure_path: Path | None
     default_sessions_dir: Path
     default_max_retries: int
     stop_event: threading.Event
+
+    def _request_server_shutdown(self) -> None:
+        self.stop_event.set()
+        threading.Thread(target=self.server.shutdown).start()
+
+    def _terminate_stale_running_session(self, path: Path, data: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        try:
+            session_data = data if data is not None else json.loads(path.read_text(encoding="utf-8"))
+            if session_data.get("status", "running") != "running":
+                return session_data
+            if time.time() - path.stat().st_mtime < RUNNING_SESSION_TIMEOUT_SECONDS:
+                return session_data
+            session_data["status"] = "terminated"
+            path.write_text(json.dumps(session_data, ensure_ascii=False, indent=2), encoding="utf-8")
+            return session_data
+        except Exception:
+            return data
 
     def _runtime_key(self, procedure_path: Path, sessions_dir: Path, max_retries: int, consts: dict[str, Any] = None) -> tuple[str, str, int, tuple[tuple[str, Any], ...]]:
         consts_tuple = tuple(sorted((consts or {}).items()))
@@ -67,23 +88,6 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                 self.session_locks[session_id] = lock
             return lock
 
-    def _total_active_refs(self) -> int:
-        active = 0
-        with self.manager_lock:
-            runtimes = list(self.runtimes.values())
-        for rt in runtimes:
-            # Re-read directory
-            for path in rt.sessions_dir.glob("*.json"):
-                if path.name == ".daemon_runtime.json" or path.name.endswith(".lock"):
-                    continue
-                try:
-                    data = json.loads(path.read_text(encoding="utf-8"))
-                    if data.get("status", "running") not in {"done", "interference", "terminated"}:
-                        active += 1
-                except Exception:
-                    continue
-        return active
-
     def do_GET(self) -> None:
         try:
             parsed = urlparse(self.path)
@@ -106,11 +110,12 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                 sessions = []
                 sessions_dir = self.default_sessions_dir
                 for p in sessions_dir.glob("*.json"):
-                    if p.name == ".daemon_runtime.json" or p.name.endswith(".lock"):
+                    if p.name.startswith(".") or p.name.endswith(".lock"):
                         continue
                     try:
                         data = json.loads(p.read_text(encoding="utf-8"))
                         if "session" in data and "status" in data:
+                            data = self._terminate_stale_running_session(p, data) or data
                             sessions.append({
                                 "id": p.stem,
                                 "status": data.get("status", "running"),
@@ -132,6 +137,7 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                     if fallback_path.exists():
                         try:
                             data = json.loads(fallback_path.read_text(encoding="utf-8"))
+                            data = self._terminate_stale_running_session(fallback_path, data) or data
                             self._write_json(data)
                             return
                         except Exception:
@@ -142,6 +148,10 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                 if session is None:
                     self.send_error(404, "Session not found")
                     return
+                session_path = runtime._session_file(session_id)
+                data = self._terminate_stale_running_session(session_path, session.to_dict())
+                if data is not None and data.get("status") == "terminated" and session.status == "running":
+                    session.status = "terminated"
                 self._write_json(session.to_dict())
                 return
 
@@ -194,19 +204,9 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                 return
 
             if action == "shutdown":
-                force = bool(req.get("force", False))
-                refs = self._total_active_refs()
-                if refs > 0 and not force:
-                    resp = {
-                        "type": "ValidationError",
-                        "code": "ACTIVE_REFS_BLOCK_SHUTDOWN",
-                        "message": f"当前仍有 {refs} 个活跃 session，拒绝关闭 daemon。可在无活跃 session 后重试，或使用 force 关闭。",
-                    }
-                else:
-                    resp = {"type": "ok", "message": "daemon shutting down"}
+                resp = {"type": "ok", "message": "dashboard shutting down"}
                 self._write_json(resp)
-                if resp.get("type") == "ok":
-                    self.stop_event.set()
+                self._request_server_shutdown()
                 return
 
             if action == "init":
@@ -218,7 +218,12 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                 sessions_dir = req.get("sessions_dir")
                 max_retries = req.get("max_retries")
                 consts = req.get("consts", {})
-                procedure_path = Path(str(procedure)) if procedure else self.default_procedure_path
+                if procedure:
+                    procedure_path = Path(str(procedure))
+                elif self.default_procedure_path:
+                    procedure_path = self.default_procedure_path
+                else:
+                    procedure_path = Path("dummy.rail")
                 target_sessions_dir = Path(str(sessions_dir)) if sessions_dir else self.default_sessions_dir
                 target_max_retries = int(max_retries) if max_retries is not None else int(self.default_max_retries)
                 
@@ -258,7 +263,7 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                     # If not tracked, try to create from default settings
                     try:
                         runtime = self._get_or_create_runtime(
-                            self.default_procedure_path,
+                            self.default_procedure_path or Path("dummy.rail"),
                             self.default_sessions_dir,
                             self.default_max_retries
                         )
@@ -269,7 +274,8 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
                 if action == "next":
                     branch_present = "branch_value" in req
                     branch_value = req.get("branch_value")
-                    self._write_json(runtime.next_step(session_id, branch_value, branch_present))
+                    variables = req.get("variables")
+                    self._write_json(runtime.next_step(session_id, branch_value, branch_present, variables))
                     return
 
                 if action == "rewind":
@@ -282,11 +288,7 @@ class DaemonHTTPHandler(BaseHTTPRequestHandler):
 
                 if action == "shutdown_session":
                     resp = runtime.stop_session(session_id)
-                    refs = self._total_active_refs()
-                    resp["daemon_shutdown"] = refs == 0
                     self._write_json(resp)
-                    if refs == 0:
-                        self.stop_event.set()
                     return
 
                 if action == "pause_session":
@@ -351,58 +353,42 @@ class ThreadedHTTPServer(ThreadingHTTPServer):
     allow_reuse_address = True
 
 
-def _cleanup_stale_sessions(sessions_dir: Path) -> None:
-    """On daemon startup, mark any leftover 'running' sessions as 'terminated'.
-    
-    These are orphaned sessions from a previous daemon process that was killed
-    ungracefully (e.g. Ctrl+C, process crash) without calling shutdown_session.
-    Since the new daemon has no runtime state for them, they can never resume.
-    """
-    for p in sessions_dir.glob("*.json"):
-        if p.name == ".daemon_runtime.json" or p.name.endswith(".lock"):
-            continue
-        try:
-            data = json.loads(p.read_text(encoding="utf-8"))
-            if data.get("status") == "running":
-                data["status"] = "terminated"
-                p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception:
-            continue
-
-
-def run_daemon(host: str, port: int, procedure_path: Path, sessions_dir: Path, max_retries: int = 3) -> None:
+def run_dashboard(host: str, port: int, procedure_path: Path | None, sessions_dir: Path, max_retries: int = 3) -> None:
     stop_event = threading.Event()
-    DaemonHTTPHandler.runtimes = {}
-    DaemonHTTPHandler.session_to_runtime = {}
-    DaemonHTTPHandler.session_locks = {}
-    DaemonHTTPHandler.manager_lock = threading.Lock()
-    DaemonHTTPHandler.session_locks_guard = threading.Lock()
-    DaemonHTTPHandler.default_procedure_path = procedure_path.resolve()
-    DaemonHTTPHandler.default_sessions_dir = sessions_dir.resolve()
-    DaemonHTTPHandler.default_max_retries = int(max_retries)
-
-    # Clean up stale sessions from any previous daemon run
-    _cleanup_stale_sessions(sessions_dir.resolve())
+    DashboardHTTPHandler.runtimes = {}
+    DashboardHTTPHandler.session_to_runtime = {}
+    DashboardHTTPHandler.session_locks = {}
+    DashboardHTTPHandler.manager_lock = threading.Lock()
+    DashboardHTTPHandler.session_locks_guard = threading.Lock()
+    DashboardHTTPHandler.default_procedure_path = procedure_path.resolve() if procedure_path else None
+    DashboardHTTPHandler.default_sessions_dir = sessions_dir.resolve()
+    DashboardHTTPHandler.default_max_retries = int(max_retries)
     
-    DaemonHTTPHandler.runtimes[
-        (
-            str(DaemonHTTPHandler.default_procedure_path),
-            str(DaemonHTTPHandler.default_sessions_dir),
-            DaemonHTTPHandler.default_max_retries,
-            ()
+    if DashboardHTTPHandler.default_procedure_path:
+        DashboardHTTPHandler.runtimes[
+            (
+                str(DashboardHTTPHandler.default_procedure_path),
+                str(DashboardHTTPHandler.default_sessions_dir),
+                DashboardHTTPHandler.default_max_retries,
+                ()
+            )
+        ] = RailRunRuntime(
+            DashboardHTTPHandler.default_procedure_path,
+            DashboardHTTPHandler.default_sessions_dir,
+            max_retries=DashboardHTTPHandler.default_max_retries,
+            consts={}
         )
-    ] = RailRunRuntime(
-        DaemonHTTPHandler.default_procedure_path,
-        DaemonHTTPHandler.default_sessions_dir,
-        max_retries=DaemonHTTPHandler.default_max_retries,
-        consts={}
-    )
-    DaemonHTTPHandler.stop_event = stop_event
+    DashboardHTTPHandler.stop_event = stop_event
     
-    server = ThreadedHTTPServer((host, port), DaemonHTTPHandler)
-    server.timeout = 0.5
+    server = ThreadedHTTPServer((host, port), DashboardHTTPHandler)
     try:
-        while not stop_event.is_set():
-            server.handle_request()
+        print(
+            f"[{now_str()}] dashboard started on http://{host}:{port}/ "
+            f"procedure={DashboardHTTPHandler.default_procedure_path}",
+            file=sys.stderr,
+            flush=True,
+        )
+        server.serve_forever(poll_interval=0.5)
     finally:
+        print(f"[{now_str()}] dashboard stopped", file=sys.stderr, flush=True)
         server.server_close()

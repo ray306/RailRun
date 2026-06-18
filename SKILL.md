@@ -1,8 +1,8 @@
 ---
 name: RailRun
 Author: Jinbiao Yang
-Version: 2026.06.03
-argument-hint: "[这里填写流程别名，例如：[K2K]、[simple_todo_flow]（别名在 config.json 的 rails_alias_and_path 字段中配置）]"
+Version: 2026.06.04
+argument-hint: "[这里填写流程别名或者路径 ，例如：[K2K]、[simple_todo_flow.rail]（别名在 config.json 的 rails_alias_and_path 字段中配置）]"
 arguments: [procedure_name]
 description: Agent 经常自作主张调整复杂的流程。本 Skill 可通过向 Agent 渐进式披露每个步骤，让 Agent 只能逐步执行当前看到的步骤，以保证流程确定性。
 
@@ -25,33 +25,7 @@ description: Agent 经常自作主张调整复杂的流程。本 Skill 可通过
 
 - 默认参数格式：`/railrun [procedure_name]`
 - 带参数格式：`/railrun [procedure_name](param1=value1, param2=value2, ...)`
-- `procedure_name` 是 rail 流程的别名或路径。将收到的 `procedure_name` 原样传给 `next_step.py --procedure`。
-
----
-
-> 为避免中文输出乱码，中文编码环境中python需要加上 -X utf8 参数。
-
-## Agent 的工作过程：
-说明：以下命令默认在 `next_step.py` 所在目录执行（CLI 入口文件）。
-
-1. 初始化：
-   ```
-   python -X utf8 next_step.py --procedure "<procedure_name>"
-   ```
-
-2. 获取下一步：
-   ```
-   python -X utf8 next_step.py --session <session_id> [--branch-value true|false]
-   ```
-
-3. 执行返回的 `instruction`。
-
-4. 重复步骤 2-3，直到 `Finished` 或 `HumanInterferenceRequest`。
-
-5. 停止 session：
-   ```
-   python -X utf8 next_step.py --session <session_id> --shutdown
-   ```
+- `[xxx]` 里包括了 rail 流程的别名或路径。将收到的 `[procedure_name]` 原样传给next_step。
 
 ---
 
@@ -69,7 +43,7 @@ description: Agent 经常自作主张调整复杂的流程。本 Skill 可通过
 ## 补充规则
 
 - `branch_value` 必须由 Agent 根据“已执行结果”自行给出；`while True` 这类条件直接回传 `true`；`for` 由 runtime 通过 `For` 节点自动推进，不需要 Agent回传循环条件。
-- **默认必须自动跑到终态**：除非`instruction`明确指定需要暂停或停止，否则持续执行直到 `Finished` 或 `HumanInterferenceRequest`。
+- **回传运行时变量**：Agent 可在推进下一步时回传新提取的数据或状态变量（通过多次指定 `--var name=value`），这些变量会被写入 Session 的变量池并用于后续步骤中 `{{name}}` 的模板替换。
 - 步骤回溯（让下一次的“获取下一步”从指定步骤重新开始）：
 
 ```
@@ -77,3 +51,33 @@ python [-X utf8] next_step.py --session <session_id> --step-index <step_index>
 ```
 
 （“获取下一步”的返回结构中包含 `"step_index"` 字段。它充当了步骤的历史游标。）
+
+---
+## 开始执行：
+
+现在请你按照下面的工作过程执行任务：
+
+1. 初始化：
+   ```
+   python -X utf8 next_step.py --procedure "procedure_name"
+   ```
+
+2. 获取下一步：
+   ```
+   python -X utf8 next_step.py --session <session_id> [--branch-value true|false] [--var name=value]
+   ```
+
+3. 执行返回的 `instruction`。
+
+4. 重复步骤 2-3，直到 `Finished` 或 `HumanInterferenceRequest`。
+
+5. 停止 session：
+   ```
+   python -X utf8 next_step.py --session <session_id> --shutdown
+   ```
+
+注意：
+- 以下命令默认在 `next_step.py` 所在目录执行；
+- 为避免中文输出乱码，中文编码环境中python需要加上 -X utf8 参数；
+- 如果没有出现程序错误，禁止去读取本目录下的任何文件；
+- **默认必须自动跑到终态**：除非`instruction`明确指定需要暂停或停止，否则持续执行直到 `Finished` 或 `HumanInterferenceRequest`。

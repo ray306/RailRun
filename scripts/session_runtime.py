@@ -12,6 +12,7 @@ from .session_state import SessionState
 class StepInput:
     branch_present: bool = False
     branch_value: Any = None
+    variables: dict[str, Any] = None
 
 
 _VAR_PATTERN = re.compile(r"{{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*}}")
@@ -76,6 +77,9 @@ def advance_session(
     step_input: StepInput,
     now_fn: Callable[[], str],
 ) -> tuple[dict[str, Any], SessionState]:
+    if step_input.variables:
+        session.vars.update(step_input.variables)
+
     nodes = dag["nodes"]
     current_step_index = int(session.cursor.get("step_index", 0))
 
