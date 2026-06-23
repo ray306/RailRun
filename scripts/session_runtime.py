@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Callable
 import re
@@ -19,13 +21,29 @@ class StepInput:
 
 _VAR_PATTERN = re.compile(r"{{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*}}")
 _OUTPUT_REQUIRED_TYPES = {"Step", "Ask", "Branch"}
-_DEFAULT_LANGUAGE = "中文"
+_ROOT = Path(__file__).resolve().parents[1]
+_DEFAULT_LANGUAGE_FALLBACK = "中文"
+
+
+def _configured_default_language() -> str:
+    for config_path in (_ROOT / "config.json", _ROOT / ".railrun.json"):
+        if not config_path.exists():
+            continue
+        try:
+            config_data = json.loads(config_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        runtime = config_data.get("runtime") if isinstance(config_data, dict) else None
+        language = runtime.get("language") if isinstance(runtime, dict) else None
+        if isinstance(language, str) and language.strip():
+            return language.strip()
+    return _DEFAULT_LANGUAGE_FALLBACK
 
 
 def _language_message(language: str) -> str:
     language = language.strip() if isinstance(language, str) else ""
     if not language:
-        language = _DEFAULT_LANGUAGE
+        language = _configured_default_language()
     return f"执行过程必须使用{language}输出。"
 
 

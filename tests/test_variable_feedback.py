@@ -5,7 +5,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.rail_compiler import RailCompiler
 from scripts.base import RailRunRuntime
 
 

@@ -257,6 +257,8 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertEqual(branch["message"], LANGUAGE_MESSAGE)
         missing = rt.next_step("s2")
         self.assertEqual(missing["type"], "ValidationError")
+        # Current contract: a pending Branch output is recorded before branch_value
+        # validation, even when the branch decision itself is invalid.
         wrong_type = rt.next_step("s2", branch_value="true", branch_present=True, output="分支判断正式输出")
         self.assertEqual(wrong_type["type"], "ValidationError")
 
@@ -327,7 +329,6 @@ class RuntimeContractTests(unittest.TestCase):
         shared_dir = self.root / "shared"
         shared_dir.mkdir(parents=True, exist_ok=True)
 
-        entry = sub_dir / "entry.procedure"
         entry = sub_dir / "entry.rail"
         entry.write_text('include "../shared/fetch_sub.rail"\n', encoding="utf-8")
         (shared_dir / "fetch_sub.rail").write_text("输出 from shared\n", encoding="utf-8")

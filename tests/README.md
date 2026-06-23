@@ -1,10 +1,14 @@
 # Agent Testing Guide
 
-本目录包含两类测试：
+本目录包含以下几类测试：
 
 1. 协议契约测试：`test_runtime_contract.py`
 2. Agent 协作流程测试：`test_agent_weather_flows.py`
 3. `For` 节点专项测试：`test_for_node.py`
+4. CLI 路径和流程解析测试：`test_path_resolution.py`
+5. 宿主输出采集测试：`test_host_output.py`
+6. Dashboard 导出测试：`test_dashboard_export.py`
+7. 运行时变量反馈测试：`test_variable_feedback.py`
 
 ## 你要做什么
 

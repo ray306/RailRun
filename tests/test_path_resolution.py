@@ -12,6 +12,7 @@ from pathlib import Path
 from next_step import (
     ProcedureResolutionError,
     build_generator_consts_for_file,
+    normalize_runtime_options,
     parse_procedure_and_consts,
     resolve_procedure_path,
 )
@@ -59,11 +60,57 @@ class PathResolutionTests(unittest.TestCase):
         self.assertEqual(resolved, str(target.resolve()))
         self.assertEqual(consts, {"no_pause": True, "env": "prod"})
 
-    def test_reserved_language_can_be_extracted_from_legacy_consts(self) -> None:
+    def test_reserved_language_can_be_extracted_from_procedure_consts(self) -> None:
         procedure, consts = parse_procedure_and_consts("[main](language='English', no_pause=true)")
 
         self.assertEqual(procedure, "[main]")
         self.assertEqual(consts, {"language": "English", "no_pause": True})
+
+    def test_runtime_defaults_are_loaded_from_config(self) -> None:
+        (self.root / "config.json").write_text(
+            json.dumps(
+                {
+                    "runtime": {"persistence": False, "language": "English"},
+                    "rails_alias_and_path": {},
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        args = argparse.Namespace(procedure="[main]", persistence=None, language=None)
+
+        ok, consts = normalize_runtime_options(args)
+
+        self.assertTrue(ok)
+        self.assertEqual(consts, {})
+        self.assertEqual(args.procedure, "main")
+        self.assertEqual(args.persistence, "false")
+        self.assertEqual(args.language, "English")
+
+    def test_procedure_runtime_params_override_config_defaults(self) -> None:
+        (self.root / "config.json").write_text(
+            json.dumps(
+                {
+                    "runtime": {"persistence": False, "language": "English"},
+                    "rails_alias_and_path": {},
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        args = argparse.Namespace(
+            procedure="[main](persistence=true, language='中文', no_pause=true)",
+            persistence=None,
+            language=None,
+        )
+
+        ok, consts = normalize_runtime_options(args)
+
+        self.assertTrue(ok)
+        self.assertEqual(consts, {"no_pause": True})
+        self.assertEqual(args.procedure, "[main]")
+        self.assertEqual(args.persistence, "true")
+        self.assertEqual(args.language, "中文")
 
     def test_alias_call_with_escaped_quotes_and_spaces(self) -> None:
         target = self.root / "flows" / "main.rail"
@@ -153,13 +200,9 @@ class PathResolutionTests(unittest.TestCase):
                 "utf8",
                 str(repo_root / "next_step.py"),
                 "--procedure",
-                str(md_target),
+                f"{md_target}(persistence=false, language='English')",
                 "--sessions-dir",
                 str(sessions_dir),
-                "--persistence",
-                "false",
-                "--language",
-                "English",
             ],
             cwd=repo_root,
             text=True,
@@ -176,6 +219,7 @@ class PathResolutionTests(unittest.TestCase):
         session = json.loads(session_file.read_text(encoding="utf-8"))
         self.assertTrue(session["procedure_path"].endswith("examples\\generate_rail_flow.rail") or session["procedure_path"].endswith("examples/generate_rail_flow.rail"))
         self.assertEqual(session["language"], "English")
+        self.assertFalse(session["output_persistence_enabled"])
         self.assertEqual(session["vars"]["input_kind"], "file")
         self.assertEqual(session["vars"]["input_path"], str(md_target.resolve()))
 

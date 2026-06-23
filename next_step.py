@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+import re
 import secrets
 from pathlib import Path
 from typing import Any
@@ -10,6 +12,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8799
+DEFAULT_LANGUAGE = "中文"
+DEFAULT_PERSISTENCE = True
 DEFAULT_SESSIONS_DIR = ROOT / "sessions"
 SESSION_ID_HEX_LEN = 4
 RAIL_GENERATOR_ALIAS = "rail_generator"
@@ -19,6 +23,14 @@ OUTPUT_HISTORY_TYPES = {"Step", "Ask", "Branch"}
 
 class ProcedureResolutionError(ValueError):
     pass
+
+
+def print_json(payload: dict[str, Any]) -> None:
+    print(json.dumps(payload, ensure_ascii=False))
+
+
+def validation_error(message: str) -> dict[str, Any]:
+    return {"type": "ValidationError", "message": message}
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,12 +49,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", help="上一执行步骤向用户展示的完整正式输出")
     parser.add_argument(
         "--language",
-        help="要求 Agent 执行过程使用的输出语言；默认 中文。初始化后保存到 session。",
+        help="要求 Agent 执行过程使用的输出语言；未传入时读取 config.json runtime.language。初始化后保存到 session。",
     )
     parser.add_argument(
         "--persistence",
         choices=["true", "false"],
-        help="是否记录正式输出；默认 true。初始化后保存到 session。",
+        help="是否记录正式输出；未传入时读取 config.json runtime.persistence。初始化后保存到 session。",
     )
     return parser.parse_args()
 
@@ -69,6 +81,37 @@ def load_first_config() -> tuple[dict[str, Any], Path] | tuple[None, None]:
     return None, None
 
 
+def load_runtime_config_defaults() -> tuple[bool, str, dict[str, str]]:
+    config_data, _ = load_first_config()
+    persistence = DEFAULT_PERSISTENCE
+    language = DEFAULT_LANGUAGE
+    errors: dict[str, str] = {}
+
+    runtime_config = {}
+    if isinstance(config_data, dict):
+        candidate = config_data.get("runtime", {})
+        if isinstance(candidate, dict):
+            runtime_config = candidate
+        elif "runtime" in config_data:
+            errors["runtime"] = "config.json 中 runtime 必须是对象。"
+
+    if "persistence" in runtime_config:
+        configured_persistence = runtime_config["persistence"]
+        if isinstance(configured_persistence, bool):
+            persistence = configured_persistence
+        else:
+            errors["persistence"] = "config.json 中 runtime.persistence 必须是 true 或 false。"
+
+    if "language" in runtime_config:
+        configured_language = runtime_config["language"]
+        if isinstance(configured_language, str) and configured_language.strip():
+            language = configured_language.strip()
+        else:
+            errors["language"] = "config.json 中 runtime.language 必须是非空字符串。"
+
+    return persistence, language, errors
+
+
 def resolve_config_path(path_value: str, base_dir: Path) -> Path:
     path = Path(path_value)
     return path if path.is_absolute() else base_dir / path
@@ -81,18 +124,58 @@ def resolve_existing_path(path: Path, raw_text: str) -> str:
     return str(resolved)
 
 
+def strip_procedure_wrappers(text: str) -> str:
+    text = text.strip()
+    while text:
+        if (
+            (text.startswith("'") and text.endswith("'"))
+            or (text.startswith('"') and text.endswith('"'))
+            or (text.startswith("[") and text.endswith("]"))
+            or (text.startswith("(") and text.endswith(")"))
+        ):
+            text = text[1:-1].strip()
+        else:
+            break
+    return text
+
+
+def parse_procedure_const_value(value: str) -> Any:
+    value = value.strip()
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
+    try:
+        return ast.literal_eval(value)
+    except Exception:
+        if (value.startswith("'") and value.endswith("'")) or (
+            value.startswith('"') and value.endswith('"')
+        ):
+            return value[1:-1]
+    return value
+
+
+def parse_variable_value(value: str) -> Any:
+    value = value.strip()
+    if (value.startswith("'") and value.endswith("'")) or (
+        value.startswith('"') and value.endswith('"')
+    ):
+        return value[1:-1]
+    if value.lower() == "true":
+        return True
+    if value.lower() == "false":
+        return False
+    try:
+        if "." in value:
+            return float(value)
+        return int(value)
+    except ValueError:
+        return value
+
+
 def resolve_procedure_path(args: argparse.Namespace) -> str | None:
     if args.procedure:
-        raw_text = str(args.procedure).strip()
-        # Strip quotes and brackets/parentheses recursively
-        while raw_text:
-            if (raw_text.startswith("'") and raw_text.endswith("'")) or \
-               (raw_text.startswith('"') and raw_text.endswith('"')) or \
-               (raw_text.startswith('[') and raw_text.endswith(']')) or \
-               (raw_text.startswith('(') and raw_text.endswith(')')):
-                raw_text = raw_text[1:-1].strip()
-            else:
-                break
+        raw_text = strip_procedure_wrappers(str(args.procedure))
 
         if not raw_text:
             raise ProcedureResolutionError("procedure 路径或别名为空。")
@@ -120,7 +203,7 @@ def resolve_procedure_path(args: argparse.Namespace) -> str | None:
 
 
 def print_procedure_resolution_error(exc: ProcedureResolutionError) -> None:
-    print(json.dumps({"type": "ValidationError", "message": str(exc)}, ensure_ascii=False))
+    print_json(validation_error(str(exc)))
 
 
 def session_persistence_mode(session_data: dict[str, Any] | None) -> str | None:
@@ -219,122 +302,116 @@ def parse_procedure_and_consts(procedure_str: str | None) -> tuple[str | None, d
         path_part, params_part = procedure_str.split("(", 1)
         params_part = params_part.rstrip(")")
         consts = {}
-        import re
-        import ast
         pattern = re.compile(
             r"([a-zA-Z_]\w*)\s*=\s*('(?:[^'\\]|\\.)*'|\"(?:[^\"\\]|\\.)*\"|[a-zA-Z0-9_\.]+)"
         )
         for m in pattern.finditer(params_part):
             k = m.group(1)
-            v = m.group(2).strip()
-            if v.lower() == "true":
-                v = True
-            elif v.lower() == "false":
-                v = False
-            else:
-                try:
-                    v = ast.literal_eval(v)
-                except Exception:
-                    if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
-                        v = v[1:-1]
-            consts[k] = v
+            consts[k] = parse_procedure_const_value(m.group(2))
         return path_part, consts
     else:
-        # Strip quotes and brackets/parentheses recursively
-        while procedure_str:
-            if (procedure_str.startswith("'") and procedure_str.endswith("'")) or \
-               (procedure_str.startswith('"') and procedure_str.endswith('"')) or \
-               (procedure_str.startswith('[') and procedure_str.endswith(']')) or \
-               (procedure_str.startswith('(') and procedure_str.endswith(')')):
-                procedure_str = procedure_str[1:-1].strip()
-            else:
-                break
-        return procedure_str, {}
+        return strip_procedure_wrappers(procedure_str), {}
 
 
-def main() -> int:
-    args = parse_args()
-    
-    # 1. Start Web UI if requested
-    if args.ui:
-        from scripts.dashboard import run_dashboard
-        procedure_path = None
-        if args.procedure:
-            try:
-                procedure_path = Path(resolve_procedure_path(args))
-            except ProcedureResolutionError:
-                pass
-        
-        print(f"Starting RailRun Dashboard on http://{args.host}:{args.port} ...", flush=True)
-        try:
-            run_dashboard(
-                host=args.host,
-                port=args.port,
-                procedure_path=procedure_path,
-                sessions_dir=Path(args.sessions_dir),
-                max_retries=args.max_retries,
-            )
-        except KeyboardInterrupt:
-            print("\nDashboard stopped.", flush=True)
-        return 0
+def parse_vars(items: list[str]) -> dict[str, Any]:
+    variables = {}
+    for item in items:
+        if "=" not in item:
+            continue
+        key, value = item.split("=", 1)
+        variables[key.strip()] = parse_variable_value(value)
+    return variables
 
-    # 2. Local/Base Mode Execution
+
+def normalize_runtime_options(args: argparse.Namespace) -> tuple[bool, dict[str, Any]]:
     procedure_clean, consts = parse_procedure_and_consts(args.procedure)
     persistence_from_procedure = consts.pop("persistence", None)
     language_from_procedure = consts.pop("language", None)
+    config_persistence, config_language, config_errors = load_runtime_config_defaults()
+    if config_errors:
+        print_json(validation_error(" ".join(config_errors.values())))
+        return False, consts
+
     if args.persistence is None and persistence_from_procedure is not None:
         if not isinstance(persistence_from_procedure, bool):
-            print(json.dumps(
-                {"type": "ValidationError", "message": "persistence 参数必须是 true 或 false。"},
-                ensure_ascii=False,
-            ))
-            return 1
+            print_json(validation_error("persistence 参数必须是 true 或 false。"))
+            return False, consts
         args.persistence = "true" if persistence_from_procedure else "false"
+
     if args.language is None and language_from_procedure is not None:
         if not isinstance(language_from_procedure, str) or not language_from_procedure.strip():
-            print(json.dumps(
-                {"type": "ValidationError", "message": "language 参数必须是非空字符串。"},
-                ensure_ascii=False,
-            ))
-            return 1
+            print_json(validation_error("language 参数必须是非空字符串。"))
+            return False, consts
         args.language = language_from_procedure
-    if args.language is None:
-        args.language = "中文"
-    args.procedure = procedure_clean
-    args.consts = consts
 
+    if args.language is None:
+        args.language = config_language
+    if args.persistence is None:
+        args.persistence = "true" if config_persistence else "false"
+    args.procedure = procedure_clean
+    return True, consts
+
+
+def recover_procedure_path_from_session(sessions_dir: str, session_id: str | None) -> str | None:
+    if not session_id:
+        return None
+    session_data = read_session_data(sessions_dir, session_id)
+    if not isinstance(session_data, dict):
+        return None
+    procedure_path = session_data.get("procedure_path")
+    return procedure_path if isinstance(procedure_path, str) else None
+
+
+def run_ui(args: argparse.Namespace) -> int:
+    from scripts.dashboard import run_dashboard
+
+    procedure_path = None
+    if args.procedure:
+        try:
+            procedure_path = Path(resolve_procedure_path(args))
+        except ProcedureResolutionError:
+            pass
+
+    print(f"Starting RailRun Dashboard on http://{args.host}:{args.port} ...", flush=True)
+    try:
+        run_dashboard(
+            host=args.host,
+            port=args.port,
+            procedure_path=procedure_path,
+            sessions_dir=Path(args.sessions_dir),
+            max_retries=args.max_retries,
+        )
+    except KeyboardInterrupt:
+        print("\nDashboard stopped.", flush=True)
+    return 0
+
+
+def build_runtime(args: argparse.Namespace, consts: dict[str, Any]):
     from scripts.base import RailRunRuntime
+
     try:
         procedure_path = resolve_procedure_path(args)
     except ProcedureResolutionError as exc:
         print_procedure_resolution_error(exc)
-        return 1
-    
-    # Recover procedure path from session file if omitted but session exists
+        return None
+
     if args.session and not procedure_path:
-        session_file = Path(args.sessions_dir).resolve() / f"{args.session}.json"
-        if session_file.exists():
-            try:
-                with open(session_file, "r", encoding="utf-8") as f:
-                    session_data = json.load(f)
-                    procedure_path = session_data.get("procedure_path")
-            except Exception:
-                pass
+        procedure_path = recover_procedure_path_from_session(args.sessions_dir, args.session)
 
     if not procedure_path:
-        print(json.dumps({"type": "ValidationError", "message": "初始化需要 --procedure"}, ensure_ascii=False))
-        return 1
+        print_json(validation_error("初始化需要 --procedure"))
+        return None
+
     if Path(procedure_path).suffix.lower() in GENERATE_INPUT_SUFFIXES:
         consts = build_generator_consts_for_file(procedure_path, consts)
-        args.consts = consts
         try:
             procedure_path = resolve_procedure_path(argparse.Namespace(procedure=f"[{RAIL_GENERATOR_ALIAS}]"))
         except ProcedureResolutionError as exc:
             print_procedure_resolution_error(exc)
-            return 1
+            return None
 
     try:
-        local_rt = RailRunRuntime(
+        runtime = RailRunRuntime(
             procedure_path=Path(procedure_path),
             sessions_dir=Path(args.sessions_dir),
             max_retries=args.max_retries,
@@ -343,28 +420,38 @@ def main() -> int:
             language=args.language,
             host="auto",
         )
-    except Exception as e:
-        print(json.dumps({"type": "ValidationError", "message": f"初始化运行时失败: {str(e)}"}, ensure_ascii=False))
+    except Exception as exc:
+        print_json(validation_error(f"初始化运行时失败: {str(exc)}"))
+        return None
+    return runtime
+
+
+def run_cli(args: argparse.Namespace) -> int:
+    ok, consts = normalize_runtime_options(args)
+    if not ok:
+        return 1
+
+    local_rt = build_runtime(args, consts)
+    if local_rt is None:
         return 1
 
     if args.shutdown:
         if not args.session:
-            print(json.dumps({"type": "ValidationError", "message": "--shutdown 必须与 --session 一起使用。"}, ensure_ascii=False))
+            print_json(validation_error("--shutdown 必须与 --session 一起使用。"))
             return 1
-        resp = local_rt.stop_session(args.session)
-        print(json.dumps(resp, ensure_ascii=False))
+        print_json(local_rt.stop_session(args.session))
         return 0
 
     if args.step_index is not None:
         if not args.session:
-            print(json.dumps({"type": "ValidationError", "message": "--step-index 必须与 --session 一起使用。"}, ensure_ascii=False))
+            print_json(validation_error("--step-index 必须与 --session 一起使用。"))
             return 1
         resp = local_rt.rewind_session(args.session, int(args.step_index))
         resp = attach_output_argument_instruction(
             resp,
             session_data=read_session_data(args.sessions_dir, args.session),
         )
-        print(json.dumps(resp, ensure_ascii=False))
+        print_json(resp)
         return 0
 
     if not args.session:
@@ -374,42 +461,27 @@ def main() -> int:
             resp,
             session_data=read_session_data(args.sessions_dir, new_session),
         )
-        print(json.dumps(resp, ensure_ascii=False))
+        print_json(resp)
         return 0
 
     branch_present = args.branch_value is not None
     branch_value = args.branch_value == "true" if branch_present else None
-
-    # 解析回传的运行时变量
-    variables = {}
-    for item in args.var:
-        if "=" in item:
-            k, v = item.split("=", 1)
-            k = k.strip()
-            v = v.strip()
-            if (v.startswith("'") and v.endswith("'")) or (v.startswith('"') and v.endswith('"')):
-                v = v[1:-1]
-            elif v.lower() == "true":
-                v = True
-            elif v.lower() == "false":
-                v = False
-            else:
-                try:
-                    if "." in v:
-                        v = float(v)
-                    else:
-                        v = int(v)
-                except ValueError:
-                    pass
-            variables[k] = v
+    variables = parse_vars(args.var)
 
     resp = local_rt.next_step(args.session, branch_value, branch_present, variables, args.output)
     resp = attach_output_argument_instruction(
         resp,
         session_data=read_session_data(args.sessions_dir, args.session),
     )
-    print(json.dumps(resp, ensure_ascii=False))
+    print_json(resp)
     return 0
+
+
+def main() -> int:
+    args = parse_args()
+    if args.ui:
+        return run_ui(args)
+    return run_cli(args)
 
 
 if __name__ == "__main__":
