@@ -79,13 +79,7 @@ class RailRunRuntime:
         else:
             if self.procedure_path.suffix.lower() != ".rail":
                 raise ValueError("只支持 .rail 或 -cfg.json 作为 procedure 输入。")
-            if self.consts:
-                import hashlib
-                canonical = ",".join(f"{k}={v}" for k, v in sorted(self.consts.items()))
-                h = hashlib.md5(canonical.encode('utf-8')).hexdigest()[:8]
-                self.dag_path = self.procedure_path.with_name(f"{self.procedure_path.stem}-cfg-{h}.json")
-            else:
-                self.dag_path = self.procedure_path.with_name(f"{self.procedure_path.stem}-cfg.json")
+            self.dag_path = self.procedure_path.with_name(f"{self.procedure_path.stem}-cfg.json")
         self.max_retries = max_retries
         self.output_persistence_enabled = output_persistence_enabled
         self.language = language
@@ -97,7 +91,7 @@ class RailRunRuntime:
             if not self.dag_path.exists():
                 raise FileNotFoundError(f"CFG 文件不存在: {self.dag_path}")
             return
-        if not self.dag_path.exists() or self.procedure_path.stat().st_mtime > self.dag_path.stat().st_mtime:
+        if self.consts or not self.dag_path.exists() or self.procedure_path.stat().st_mtime > self.dag_path.stat().st_mtime:
             compiler = RailCompiler(consts=self.consts)
             cfg = compiler.compile(self.procedure_path)
             self.dag_path.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
