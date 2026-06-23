@@ -2,7 +2,9 @@
   "rails_alias_and_path": {
     "K2K": "examples/K2K/SKILL.rail",
     "simple_todo_flow": "examples/simple_todo_flow.rail",
+    "rail_generator": "examples/generate_rail_flow.rail",
     "invest": "examples/company_value_chain_investment_quality.rail",
-    "cypto": "examples/cypto_investment_quality.rail"
+    "cypto": "examples/cypto_investment_quality.rail",
+    "decomposition":"examples/recursive_minimal_decomposition.rail"
   }
 }

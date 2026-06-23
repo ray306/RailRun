@@ -3,11 +3,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from next_step import ProcedureResolutionError, parse_procedure_and_consts, resolve_procedure_path
+from next_step import (
+    ProcedureResolutionError,
+    build_generator_consts_for_file,
+    parse_procedure_and_consts,
+    resolve_procedure_path,
+)
 
 
 class PathResolutionTests(unittest.TestCase):
@@ -52,6 +59,12 @@ class PathResolutionTests(unittest.TestCase):
         self.assertEqual(resolved, str(target.resolve()))
         self.assertEqual(consts, {"no_pause": True, "env": "prod"})
 
+    def test_reserved_language_can_be_extracted_from_legacy_consts(self) -> None:
+        procedure, consts = parse_procedure_and_consts("[main](language='English', no_pause=true)")
+
+        self.assertEqual(procedure, "[main]")
+        self.assertEqual(consts, {"language": "English", "no_pause": True})
+
     def test_alias_call_with_escaped_quotes_and_spaces(self) -> None:
         target = self.root / "flows" / "main.rail"
         target.parent.mkdir(parents=True)
@@ -92,30 +105,6 @@ class PathResolutionTests(unittest.TestCase):
             self.assertEqual(resolved, str(target.resolve()), f"Failed on input: {inp}")
             self.assertEqual(consts, {})
 
-    def test_md_rewrite_retains_parameters_in_retry_cmd(self) -> None:
-        md_target = self.root / "flows" / "main.md"
-        md_target.parent.mkdir(parents=True)
-        md_target.write_text("# Flow\n", encoding="utf-8")
-
-        from next_step import build_md_rewrite_instruction
-        args = self._args("flows/main.md")
-        procedure_clean, consts = parse_procedure_and_consts("flows/main.md(no_pause=true, env='prod')")
-        args.procedure = procedure_clean
-        args.consts = consts
-        args.host = "127.0.0.1"
-        args.port = 8799
-        args.max_retries = 3
-        args.sessions_dir = str(self.root / "sessions")
-        args.branch_value = None
-        args.session = "1234"
-
-        instruction = build_md_rewrite_instruction(args)
-        self.assertIsNotNone(instruction)
-        retry_command = instruction["retry_command"]
-        import shlex
-        parts = shlex.split(retry_command)
-        self.assertEqual(parts[3], f"{md_target.with_suffix('.rail')}(no_pause=true, env='prod')")
-
     def test_direct_rail_path_resolves_from_cwd(self) -> None:
         target = self.root / "examples" / "simple_todo_flow.rail"
         target.parent.mkdir(parents=True)
@@ -134,6 +123,61 @@ class PathResolutionTests(unittest.TestCase):
 
         self.assertEqual(resolve_procedure_path(self._args("flows/main.md")), str(md_target.resolve()))
         self.assertEqual(resolve_procedure_path(self._args("flows/main.txt")), str(txt_target.resolve()))
+
+    def test_generator_consts_for_text_file(self) -> None:
+        md_target = self.root / "flows" / "main.md"
+        md_target.parent.mkdir(parents=True)
+        md_target.write_text("# Flow\n", encoding="utf-8")
+
+        consts = build_generator_consts_for_file(
+            str(md_target),
+            {"no_pause": True, "env": "prod"},
+        )
+
+        self.assertEqual(consts["input_kind"], "file")
+        self.assertEqual(consts["input_path"], str(md_target.resolve()))
+        self.assertEqual(consts["suggested_output_rail"], str(md_target.with_suffix(".rail").resolve()))
+        self.assertEqual(consts["source_flow_params"], "env='prod', no_pause=true")
+
+    def test_next_step_routes_text_file_to_generator(self) -> None:
+        md_target = self.root / "flows" / "main.md"
+        sessions_dir = self.root / "sessions"
+        md_target.parent.mkdir(parents=True)
+        md_target.write_text("# Flow\n", encoding="utf-8")
+
+        repo_root = Path(__file__).resolve().parents[1]
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-X",
+                "utf8",
+                str(repo_root / "next_step.py"),
+                "--procedure",
+                str(md_target),
+                "--sessions-dir",
+                str(sessions_dir),
+                "--persistence",
+                "false",
+                "--language",
+                "English",
+            ],
+            cwd=repo_root,
+            text=True,
+            encoding="utf-8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["type"], "init")
+        session_file = sessions_dir / f"{payload['session']}.json"
+        session = json.loads(session_file.read_text(encoding="utf-8"))
+        self.assertTrue(session["procedure_path"].endswith("examples\\generate_rail_flow.rail") or session["procedure_path"].endswith("examples/generate_rail_flow.rail"))
+        self.assertEqual(session["language"], "English")
+        self.assertEqual(session["vars"]["input_kind"], "file")
+        self.assertEqual(session["vars"]["input_path"], str(md_target.resolve()))
 
     def test_unbracketed_alias_resolves_successfully(self) -> None:
         target = self.root / "examples" / "simple_todo_flow.rail"

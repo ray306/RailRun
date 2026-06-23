@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 import argparse
-import shlex
 import json
-import os
 import secrets
-import subprocess
-import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +12,9 @@ DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8799
 DEFAULT_SESSIONS_DIR = ROOT / "sessions"
 SESSION_ID_HEX_LEN = 4
-DIRECT_PROCEDURE_SUFFIXES = {".rail", ".md", ".txt"}
+RAIL_GENERATOR_ALIAS = "rail_generator"
+GENERATE_INPUT_SUFFIXES = {".md", ".txt"}
+OUTPUT_HISTORY_TYPES = {"Step", "Ask", "Branch"}
 
 
 class ProcedureResolutionError(ValueError):
@@ -37,6 +34,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-retries", type=int, default=3)
     parser.add_argument("--sessions-dir", default=str(DEFAULT_SESSIONS_DIR))
     parser.add_argument("--var", action="append", default=[], help="回传变量值 (e.g., --var name=value)")
+    parser.add_argument("--output", help="上一执行步骤向用户展示的完整正式输出")
+    parser.add_argument(
+        "--language",
+        help="要求 Agent 执行过程使用的输出语言；默认 中文。初始化后保存到 session。",
+    )
+    parser.add_argument(
+        "--persistence",
+        choices=["true", "false"],
+        help="是否记录正式输出；默认 true。初始化后保存到 session。",
+    )
     return parser.parse_args()
 
 
@@ -116,80 +123,92 @@ def print_procedure_resolution_error(exc: ProcedureResolutionError) -> None:
     print(json.dumps({"type": "ValidationError", "message": str(exc)}, ensure_ascii=False))
 
 
-def build_md_rewrite_instruction(args: argparse.Namespace) -> dict[str, Any] | None:
-    procedure_path = resolve_procedure_path(args)
-    if not procedure_path:
+def session_persistence_mode(session_data: dict[str, Any] | None) -> str | None:
+    if not isinstance(session_data, dict):
         return None
+    if not session_data.get("output_persistence_enabled", True):
+        return "disabled"
+    if isinstance(session_data.get("host_output_capture"), dict):
+        return "host_transcript"
+    return "manual_output"
 
-    procedure = Path(procedure_path)
-    source_suffix = procedure.suffix.lower()
-    if source_suffix not in {".md", ".txt"}:
-        return None
 
-    rail_path = procedure.with_suffix(".rail")
-    procedure_arg = str(rail_path)
-    consts = getattr(args, "consts", None)
-    if consts:
-        parts = []
-        for k, v in consts.items():
-            if isinstance(v, bool):
-                val_str = "true" if v else "false"
-            elif isinstance(v, (int, float)):
-                val_str = str(v)
-            else:
-                escaped = str(v).replace("'", "\\'")
-                val_str = f"'{escaped}'"
-            parts.append(f"{k}={val_str}")
-        procedure_arg = f"{rail_path}({', '.join(parts)})"
-
-    retry_cmd = [
-        "python",
-        "next_step.py",
-        "--procedure",
-        procedure_arg,
-        "--host",
-        str(args.host),
-        "--port",
-        str(args.port),
-        "--max-retries",
-        str(args.max_retries),
-        "--sessions-dir",
-        str(Path(args.sessions_dir).resolve()),
-    ]
-    if args.branch_value is not None:
-        retry_cmd.extend(["--branch-value", args.branch_value])
-    if args.session:
-        retry_cmd.extend(["--session", args.session])
-
-    prompt_text = (
-        "如果你是Codex，请你：\n"
-        "1) 当前主 Agent 不得直接执行转写任务；必须先启动一个子 Agent 执行转写。\n"
-        "2) 子 Agent 必须依据 PROTOCOL.md 约定的协议将输入文本文件转写为 .rail 文件，输出到同目录同名 .rail。\n"
-        "3) 仅当子 Agent 成功产出 .rail 后，主 Agent 才能执行重试命令。\n"
-        "4) 若未启动子 Agent 或转写失败，必须返回失败，不得继续。\n\n"
-        "如果你不是Codex，请你：\n"
-        "直接依据 PROTOCOL.md 约定的协议将输入文本文件转写为 .rail 文件，输出到同目录同名 .rail。\n\n"
-        f"输入文件: {procedure}\n"
-        f"协议文件: {(ROOT / 'PROTOCOL.md').resolve()}\n"
-        f"输出文件: {rail_path}\n"
-        f"重试命令: {' '.join(shlex.quote(part) for part in retry_cmd)}"
+def pending_history_needs_output(session_data: dict[str, Any] | None) -> bool:
+    if not isinstance(session_data, dict):
+        return False
+    history = session_data.get("history")
+    if not isinstance(history, list) or not history:
+        return False
+    previous = history[-1]
+    return (
+        isinstance(previous, dict)
+        and previous.get("type") in OUTPUT_HISTORY_TYPES
+        and "output" not in previous
     )
 
+
+def attach_output_argument_instruction(
+    resp: dict[str, Any],
+    *,
+    session_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(resp, dict):
+        return resp
+
+    resp_type = resp.get("type")
+    if resp_type in {"Finished", "HumanInterferenceRequest"}:
+        return resp
+
+    mode = session_persistence_mode(session_data)
+    requires_output_argument = (
+        mode == "manual_output"
+        and (
+            resp_type in OUTPUT_HISTORY_TYPES
+            or pending_history_needs_output(session_data)
+        )
+    )
+    if requires_output_argument:
+        resp["output_argument_required"] = {
+            "argument": "--output",
+            "value": "<上一执行步骤的正式输出>",
+            "message": "下一次调用 next_step 时必须传入上一执行步骤向用户展示的完整正式输出。",
+        }
+    return resp
+
+
+def read_session_data(sessions_dir: str, session_id: str) -> dict[str, Any] | None:
+    session_file = Path(sessions_dir).resolve() / f"{session_id}.json"
+    if not session_file.exists():
+        return None
+    try:
+        with open(session_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def format_const_value(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    escaped = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{escaped}'"
+
+
+def format_consts_for_procedure(consts: dict[str, Any]) -> str:
+    return ", ".join(f"{key}={format_const_value(value)}" for key, value in sorted(consts.items()))
+
+
+def build_generator_consts_for_file(input_path: str, source_flow_consts: dict[str, Any]) -> dict[str, Any]:
+    source = Path(input_path).resolve()
     return {
-        # Reuse existing runtime contract so orchestrators treat this as executable prompt.
-        "type": "Step",
-        "instruction": prompt_text,
-        # Keep machine-readable hints for adapters that support structured routing.
-        "next_action": "spawn_subagent_and_retry",
-        "required_executor": "subagent",
-        "input_text_file": str(procedure),
-        "protocol_file": str((ROOT / "PROTOCOL.md").resolve()),
-        "output_rail": str(rail_path),
-        "retry_command": " ".join(shlex.quote(part) for part in retry_cmd),
+        "input_kind": "file",
+        "input_path": str(source),
+        "suggested_output_rail": str(source.with_suffix(".rail")),
+        "source_flow_params": format_consts_for_procedure(source_flow_consts),
     }
-
-
-
 
 
 def parse_procedure_and_consts(procedure_str: str | None) -> tuple[str | None, dict[str, Any]]:
@@ -261,17 +280,28 @@ def main() -> int:
 
     # 2. Local/Base Mode Execution
     procedure_clean, consts = parse_procedure_and_consts(args.procedure)
+    persistence_from_procedure = consts.pop("persistence", None)
+    language_from_procedure = consts.pop("language", None)
+    if args.persistence is None and persistence_from_procedure is not None:
+        if not isinstance(persistence_from_procedure, bool):
+            print(json.dumps(
+                {"type": "ValidationError", "message": "persistence 参数必须是 true 或 false。"},
+                ensure_ascii=False,
+            ))
+            return 1
+        args.persistence = "true" if persistence_from_procedure else "false"
+    if args.language is None and language_from_procedure is not None:
+        if not isinstance(language_from_procedure, str) or not language_from_procedure.strip():
+            print(json.dumps(
+                {"type": "ValidationError", "message": "language 参数必须是非空字符串。"},
+                ensure_ascii=False,
+            ))
+            return 1
+        args.language = language_from_procedure
+    if args.language is None:
+        args.language = "中文"
     args.procedure = procedure_clean
     args.consts = consts
-
-    try:
-        md_instruction = build_md_rewrite_instruction(args)
-    except ProcedureResolutionError as exc:
-        print_procedure_resolution_error(exc)
-        return 1
-    if md_instruction is not None:
-        print(json.dumps(md_instruction, ensure_ascii=False))
-        return 0
 
     from scripts.base import RailRunRuntime
     try:
@@ -294,13 +324,24 @@ def main() -> int:
     if not procedure_path:
         print(json.dumps({"type": "ValidationError", "message": "初始化需要 --procedure"}, ensure_ascii=False))
         return 1
+    if Path(procedure_path).suffix.lower() in GENERATE_INPUT_SUFFIXES:
+        consts = build_generator_consts_for_file(procedure_path, consts)
+        args.consts = consts
+        try:
+            procedure_path = resolve_procedure_path(argparse.Namespace(procedure=f"[{RAIL_GENERATOR_ALIAS}]"))
+        except ProcedureResolutionError as exc:
+            print_procedure_resolution_error(exc)
+            return 1
 
     try:
         local_rt = RailRunRuntime(
             procedure_path=Path(procedure_path),
             sessions_dir=Path(args.sessions_dir),
             max_retries=args.max_retries,
-            consts=consts
+            consts=consts,
+            output_persistence_enabled=args.persistence != "false",
+            language=args.language,
+            host="auto",
         )
     except Exception as e:
         print(json.dumps({"type": "ValidationError", "message": f"初始化运行时失败: {str(e)}"}, ensure_ascii=False))
@@ -319,12 +360,20 @@ def main() -> int:
             print(json.dumps({"type": "ValidationError", "message": "--step-index 必须与 --session 一起使用。"}, ensure_ascii=False))
             return 1
         resp = local_rt.rewind_session(args.session, int(args.step_index))
+        resp = attach_output_argument_instruction(
+            resp,
+            session_data=read_session_data(args.sessions_dir, args.session),
+        )
         print(json.dumps(resp, ensure_ascii=False))
         return 0
 
     if not args.session:
         new_session = secrets.token_hex(SESSION_ID_HEX_LEN // 2)
         resp = local_rt.init_session(new_session)
+        resp = attach_output_argument_instruction(
+            resp,
+            session_data=read_session_data(args.sessions_dir, new_session),
+        )
         print(json.dumps(resp, ensure_ascii=False))
         return 0
 
@@ -354,7 +403,11 @@ def main() -> int:
                     pass
             variables[k] = v
 
-    resp = local_rt.next_step(args.session, branch_value, branch_present, variables)
+    resp = local_rt.next_step(args.session, branch_value, branch_present, variables, args.output)
+    resp = attach_output_argument_instruction(
+        resp,
+        session_data=read_session_data(args.sessions_dir, args.session),
+    )
     print(json.dumps(resp, ensure_ascii=False))
     return 0
 

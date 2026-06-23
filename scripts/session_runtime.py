@@ -13,9 +13,50 @@ class StepInput:
     branch_present: bool = False
     branch_value: Any = None
     variables: dict[str, Any] = None
+    output: str | None = None
+    require_output: bool = False
 
 
 _VAR_PATTERN = re.compile(r"{{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*}}")
+_OUTPUT_REQUIRED_TYPES = {"Step", "Ask", "Branch"}
+_DEFAULT_LANGUAGE = "中文"
+
+
+def _language_message(language: str) -> str:
+    language = language.strip() if isinstance(language, str) else ""
+    if not language:
+        language = _DEFAULT_LANGUAGE
+    return f"执行过程必须使用{language}输出。"
+
+
+def _attach_language_message_until_first_step(resp: dict[str, Any], session: SessionState) -> dict[str, Any]:
+    if session.language_message_emitted:
+        return resp
+
+    message = _language_message(session.language)
+    existing = resp.get("message")
+    if isinstance(existing, str) and existing.strip():
+        resp["message"] = f"{existing}\n{message}"
+    else:
+        resp["message"] = message
+
+    if resp.get("type") == "Step":
+        session.language_message_emitted = True
+    return resp
+
+
+def _record_pending_output(session: SessionState, step_input: StepInput) -> None:
+    if not step_input.require_output or not session.history:
+        return
+
+    previous = session.history[-1]
+    if previous.get("type") not in _OUTPUT_REQUIRED_TYPES or "output" in previous:
+        return
+
+    if not isinstance(step_input.output, str) or not step_input.output.strip():
+        raise ValueError("上一执行步骤缺少正式输出；请确认宿主 transcript 已写入，或通过 --output 传入非空内容。")
+
+    previous["output"] = step_input.output
 
 
 def _render_template(text: str, vars_map: dict[str, Any]) -> str:
@@ -77,6 +118,8 @@ def advance_session(
     step_input: StepInput,
     now_fn: Callable[[], str],
 ) -> tuple[dict[str, Any], SessionState]:
+    _record_pending_output(session, step_input)
+
     if step_input.variables:
         session.vars.update(step_input.variables)
 
@@ -84,17 +127,17 @@ def advance_session(
     current_step_index = int(session.cursor.get("step_index", 0))
 
     if session.status == "done":
-        return {
+        return _attach_language_message_until_first_step({
             "type": "Finished",
             "message": "所有指令已执行完毕。结束输出。",
             "step_index": current_step_index,
-        }, session
+        }, session), session
     if session.status == "interference":
-        return {
+        return _attach_language_message_until_first_step({
             "type": "HumanInterferenceRequest",
             "message": "请人工介入",
             "step_index": current_step_index,
-        }, session
+        }, session), session
 
     if session.waiting_for_branch:
         if not step_input.branch_present:
@@ -131,19 +174,19 @@ def advance_session(
     node_type = node["type"]
     if node_type == "Finished":
         session.status = "done"
-        return {
+        return _attach_language_message_until_first_step({
             "type": "Finished",
             "message": node.get("message") or node.get("instruction") or "所有指令已执行完毕。结束输出。",
             "step_index": int(session.cursor["step_index"]),
-        }, session
+        }, session), session
 
     if node_type == "HumanInterferenceRequest":
         session.status = "interference"
-        return {
+        return _attach_language_message_until_first_step({
             "type": "HumanInterferenceRequest",
             "message": node.get("message", "请人工介入"),
             "step_index": int(session.cursor["step_index"]),
-        }, session
+        }, session), session
 
     if node_type == "Step":
         step_index = int(session.cursor["step_index"])
@@ -159,7 +202,10 @@ def advance_session(
         )
         session.cursor["step_index"] += 1
         session.cursor["node_id"] = node["next"]
-        return {"type": "Step", "instruction": rendered_instruction, "step_index": step_index}, session
+        return _attach_language_message_until_first_step(
+            {"type": "Step", "instruction": rendered_instruction, "step_index": step_index},
+            session,
+        ), session
 
     if node_type == "Guidance":
         step_index = int(session.cursor["step_index"])
@@ -174,11 +220,11 @@ def advance_session(
         )
         session.cursor["step_index"] += 1
         session.cursor["node_id"] = node["next"]
-        return {"type": "Guidance",
+        return _attach_language_message_until_first_step({"type": "Guidance",
                 "instruction": node["instruction"],
                 "message": "以上是指导性说明，不需要实际执行。请直接调用 next_step 继续。",
             "step_index": step_index,
-        }, session
+        }, session), session
 
     if node_type == "Ask":
         step_index = int(session.cursor["step_index"])
@@ -193,13 +239,13 @@ def advance_session(
         )
         session.cursor["step_index"] += 1
         session.cursor["node_id"] = node["next"]
-        return {
+        return _attach_language_message_until_first_step({
             "type": "Ask",
             "instruction": node["instruction"],
             "requires_user_input": True,
             "message": "请：1. 先询问用户问题；2. 然后暂停输出，等待用户的回答；3. 用户回答之后你给予反馈；4. 调用 next_step 继续 （你不知道、也不应预期流程什么时候结束）",
             "step_index": step_index,
-        }, session
+        }, session), session
 
     if node_type == "Branch":
         step_index = int(session.cursor["step_index"])
@@ -218,12 +264,12 @@ def advance_session(
         )
         session.waiting_for_branch = True
         session.waiting_branch_node = node_id
-        return {
+        return _attach_language_message_until_first_step({
             "type": "Branch",
             "instruction": f"请根据当前已执行步骤的实际结果判断 condition: “{rendered_condition}” 是否成立，并在下一次调用 next_step 时传入 --branch-value true|false 参数。",
             "requires_branch_value": True,
             "step_index": step_index,
-        }, session
+        }, session), session
 
     if node_type == "For":
         step_index = int(session.cursor["step_index"])
@@ -262,13 +308,13 @@ def advance_session(
         )
         session.cursor["step_index"] += 1
         session.cursor["node_id"] = next_id
-        return {
+        return _attach_language_message_until_first_step({
             "type": "For",
             "instruction": "For 循环已由系统自动推进。",
             "state": state,
             "index": cursor if state == "iterate" else None,
             "item": items[cursor] if state == "iterate" else None,
             "step_index": step_index,
-        }, session
+        }, session), session
 
     raise ValueError(f"未知节点类型: {node_type}")

@@ -44,7 +44,7 @@ class VariableFeedbackTests(unittest.TestCase):
         self.assertEqual(resp1["instruction"], "获取股票价格")
 
         # Agent returns variables `price=150` on next step call
-        resp2 = rt.next_step("s1", variables={"price": 150})
+        resp2 = rt.next_step("s1", variables={"price": 150}, output="查询到价格为 150")
         self.assertEqual(resp2["type"], "Step")
         # Ensure template variables are correctly rendered with the passed variable
         self.assertEqual(resp2["instruction"], "股票价格是 150")
@@ -54,7 +54,7 @@ class VariableFeedbackTests(unittest.TestCase):
         self.assertEqual(session.vars.get("price"), 150)
 
         # Step 3
-        resp3 = rt.next_step("s1")
+        resp3 = rt.next_step("s1", output="股票价格是 150")
         self.assertEqual(resp3["type"], "Finished")
 
 

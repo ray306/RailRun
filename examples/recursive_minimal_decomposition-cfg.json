@@ -1,0 +1,397 @@
+{
+  "protocol": "next-step-cfg/v1",
+  "entry": "1",
+  "nodes": {
+    "1": {
+      "type": "Guidance",
+      "instruction": "你是递归式最小充分拆解 Agent。\n目标：把给定父节点拆解为满足当前任务目的的最简充分结构。\n核心标准：\n1. 横向：当前直接子节点集合足以覆盖父节点中与当前任务有关的主要含义。\n2. 纵向：父节点和直接子节点集合之间不存在一旦省略就会改变解释、干预、测量、责任或失败定位的必要中间节点。\n不要预先规定层数。每个节点都先做候选拆解，再检查横向覆盖，再检查纵向跨度，必要时重构，然后递归处理。\n不要用猜测制造虚假的中间层；信息不足时标记为尚待调查、需要数据验证或需要领域专家判断。\n\n拆解过程中用一个json文件维护创建和修改的树结构。\n默认文件名`decomposition_result_{当前session的代码}.json`。\n内容格式为：\n```\n{\n  \"queue_nodes\": [xxx],\n  \"root\": {\n    \"name\": \"xxx\",\n    \"purpose\": \"xxx\",\n    \"status\": \"in_progress\",\n    \"children\": [\n      {\n        \"name\": \"xxx\",\n        \"status\": \"done\",\n        \"children\": [\n          ...\n```",
+      "next": "2",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 3
+      }
+    },
+    "2": {
+      "type": "Guidance",
+      "instruction": "明确本次拆解的根节点、分析目的和输出要求。只有用户必须补充信息时才暂停提问。",
+      "next": "3",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 32
+      }
+    },
+    "3": {
+      "type": "Ask",
+      "instruction": "请提供要拆解的根节点或问题主题。",
+      "next": "4",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 37
+      }
+    },
+    "4": {
+      "type": "Ask",
+      "instruction": "请说明这次拆解的分析目的，例如用于制定行动方案、设计指标、分配责任、定位失败原因，还是做概念理解。",
+      "next": "5",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 41
+      }
+    },
+    "5": {
+      "type": "Step",
+      "instruction": "初始化待处理节点队列，只包含根节点 {{root_node}}。",
+      "next": "6",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 159
+      }
+    },
+    "6": {
+      "type": "Branch",
+      "condition": "pending_nodes_not_empty",
+      "on_true": "7",
+      "on_false": "8",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 161
+      }
+    },
+    "7": {
+      "type": "Step",
+      "instruction": "从待处理节点队列取出下一个节点，记为 current_node。\n按广度优先处理，必须保证每个加入队列的节点都被处理一次。",
+      "next": "9",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 163
+      }
+    },
+    "8": {
+      "type": "Guidance",
+      "instruction": "汇总递归拆解结果，并显式标注停止原因和不确定项。",
+      "next": "10",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 147
+      }
+    },
+    "9": {
+      "type": "Guidance",
+      "instruction": "对单个节点执行：候选拆解 -> 尝试横向补全 -> 尝试纵向补充-> 必要重构。\n  递归语义由主流程的待处理节点队列实现，避免运行时函数自调用。",
+      "next": "11",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 115
+      }
+    },
+    "10": {
+      "type": "Step",
+      "instruction": "输出完整拆解结构。\n对每个已完成节点标注其横向覆盖结论、纵向跨度结论和停止原因。\n对尚待调查、需要数据验证或需要领域专家判断的节点单独列出。\n按树状结构组织最终结果。",
+      "next": "42",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 152
+      }
+    },
+    "11": {
+      "type": "Guidance",
+      "instruction": "判断 {{current_node}} 是否满足停止条件。\n  停止递归追求的是当前目的下足够，而不是结构最深。",
+      "next": "12",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 97
+      }
+    },
+    "12": {
+      "type": "Branch",
+      "condition": "当前节点 {{current_node}} 已经达到可直接操作的粒度，可以被无歧义地分析、测量或执行",
+      "on_true": "13",
+      "on_false": "14",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 102
+      }
+    },
+    "13": {
+      "type": "Branch",
+      "condition": "当前节点 {{current_node}} 已经满足停止条件",
+      "on_true": "15",
+      "on_false": "16",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 122
+      }
+    },
+    "14": {
+      "type": "Branch",
+      "condition": "继续拆解当前节点 {{current_node}} 不会改变实际决策",
+      "on_true": "13",
+      "on_false": "17",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 105
+      }
+    },
+    "15": {
+      "type": "Step",
+      "instruction": "将当前节点 {{current_node}} 移出待处理节点队列。",
+      "next": "6",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 124
+      }
+    },
+    "16": {
+      "type": "Step",
+      "instruction": "针对 {{current_node}} 生成暂定子节点集合（单层结构）。\n从当前分析目的出发，列出 {{current_node}} 可以初步分解为哪些主要部分、因素、机制、步骤、指标或任务。\n第一次拆解只是测试，不要把初始拆解视为最终结果。",
+      "next": "18",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 46
+      }
+    },
+    "17": {
+      "type": "Branch",
+      "condition": "当前节点 {{current_node}} 缺乏继续拆解所需信息",
+      "on_true": "13",
+      "on_false": "19",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 107
+      }
+    },
+    "18": {
+      "type": "Guidance",
+      "instruction": "准备开始循环执行",
+      "next": "20",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 129
+      }
+    },
+    "19": {
+      "type": "Branch",
+      "condition": "继续拆解当前节点 {{current_node}} 的成本是否高于信息收益",
+      "on_true": "13",
+      "on_false": "21",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 110
+      }
+    },
+    "20": {
+      "type": "Guidance",
+      "instruction": "对 {{current_node}} 的当前暂定子节点集合执行横向覆盖检查。",
+      "next": "22",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 51
+      }
+    },
+    "21": {
+      "type": "Step",
+      "instruction": "说明 {{current_node}} 尚未满足停止条件，需要继续拆解。",
+      "next": "13",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 112
+      }
+    },
+    "22": {
+      "type": "Branch",
+      "condition": "相关性:每个子节点是否确实属于、影响、实现或衡量 {{current_node}}（请独立判断，不要受到之前判断的干扰）",
+      "on_true": "23",
+      "on_false": "24",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 55
+      }
+    },
+    "23": {
+      "type": "Step",
+      "instruction": "删除或移动与 {{current_node}} 关系过弱的子节点",
+      "next": "24",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 56
+      }
+    },
+    "24": {
+      "type": "Branch",
+      "condition": "覆盖性:是否遗漏会影响当前分析结论的重要部分（请独立判断，不要受到之前判断的干扰）",
+      "on_true": "25",
+      "on_false": "26",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 58
+      }
+    },
+    "25": {
+      "type": "Step",
+      "instruction": "补充当前分析目的下必须覆盖的遗漏子节点",
+      "next": "26",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 59
+      }
+    },
+    "26": {
+      "type": "Branch",
+      "condition": "重叠性:不同子节点之间是否大量重复或只是同义表述（请独立判断，不要受到之前判断的干扰）",
+      "on_true": "27",
+      "on_false": "28",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 61
+      }
+    },
+    "27": {
+      "type": "Step",
+      "instruction": "合并重复、同义或高度重叠的子节点",
+      "next": "28",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 62
+      }
+    },
+    "28": {
+      "type": "Step",
+      "instruction": "如果前述检查改变了内容，则明确说明横向检查后补充、删除、合并和移动了哪些节点，以及原因，然后输出修正后的直接子节点集合。",
+      "next": "29",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 66
+      }
+    },
+    "29": {
+      "type": "Guidance",
+      "instruction": "对 {{current_node}} 的当前暂定子节点集合执行纵向覆盖检查。\n  检查父节点 {{current_node}} 到各直接子节点 {{child}} 之间是否省略了必要中间层，主要标准是候选中间节点是否具有独立任务价值。",
+      "next": "30",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 75
+      }
+    },
+    "30": {
+      "type": "Step",
+      "instruction": "尝试在父节点和直接子节点集合之间加入一层中介节点作为候选中间层。这一步只要提议，不要给出评价。",
+      "next": "31",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 81
+      }
+    },
+    "31": {
+      "type": "Branch",
+      "condition": "在当前任务下，候选中间层是否相比父节点提供了更多的信息？（请独立判断，不要受到之前判断的干扰，不要考虑现在的层数）",
+      "on_true": "32",
+      "on_false": "33",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 83
+      }
+    },
+    "32": {
+      "type": "Step",
+      "instruction": "说明省略该中间层会损失哪些当前任务所需的重要信息。",
+      "next": "34",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 70
+      }
+    },
+    "33": {
+      "type": "Branch",
+      "condition": "在当前任务下，候选中间层是否相比现有子节点集合覆盖了更多的潜在可能性？（请独立判断，不要受到之前判断的干扰，不要考虑现在的层数）",
+      "on_true": "35",
+      "on_false": "36",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 87
+      }
+    },
+    "34": {
+      "type": "Step",
+      "instruction": "用候选中间节点集合作为新的子节点集合，注意中间节点集不要留下任何child内容（完全删除原本的子节点集合）。",
+      "next": "37",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 72
+      }
+    },
+    "35": {
+      "type": "Step",
+      "instruction": "说明省略该中间层会损失哪些当前任务所需的重要信息。",
+      "next": "38",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 70
+      }
+    },
+    "36": {
+      "type": "Step",
+      "instruction": "说明省略该中间层是合理的。",
+      "next": "37",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 93
+      }
+    },
+    "37": {
+      "type": "Branch",
+      "condition": "上一轮横向、纵向检查都没有改变任何内容",
+      "on_true": "39",
+      "on_false": "40",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 133
+      }
+    },
+    "38": {
+      "type": "Step",
+      "instruction": "用候选中间节点集合作为新的子节点集合，注意中间节点集不要留下任何child内容（完全删除原本的子节点集合）。",
+      "next": "37",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 72
+      }
+    },
+    "39": {
+      "type": "Step",
+      "instruction": "表明 {{current_node}} 的当前一层拆解完成。\n直接子节点集合已达到覆盖充分，父子转换已达到最小充分。",
+      "next": "41",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 135
+      }
+    },
+    "40": {
+      "type": "Step",
+      "instruction": "表明 {{current_node}} 的当前一层拆解仍未满足条件。\n基于刚才发现的问题继续修正直接子节点集合。",
+      "next": "20",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 140
+      }
+    },
+    "41": {
+      "type": "Step",
+      "instruction": "将最新的直接子节点集合加入待处理节点队列。",
+      "next": "6",
+      "meta": {
+        "file": "examples\\recursive_minimal_decomposition.rail",
+        "line": 144
+      }
+    },
+    "42": {
+      "type": "Finished",
+      "instruction": "所有指令已执行完毕。结束输出。"
+    }
+  },
+  "meta": {
+    "sources": {
+      "examples\\recursive_minimal_decomposition.rail": 1782171782.4195726
+    },
+    "warnings": []
+  }
+}

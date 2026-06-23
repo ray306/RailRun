@@ -5,8 +5,9 @@ import socket
 import sys
 import threading
 import time
+from collections import OrderedDict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, quote, urlparse
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,58 @@ if _index_html_path.exists():
     HTML_PAGE = _index_html_path.read_text(encoding="utf-8")
 else:
     HTML_PAGE = "<h1>Error: index.html not found</h1>"
+
+
+def _dedupe_key(text: str) -> str:
+    return " ".join(text.split())
+
+
+def build_session_markdown(session_data: dict[str, Any]) -> str:
+    """Build a compact Markdown report from recorded formal outputs."""
+    procedure_path = str(session_data.get("procedure_path", ""))
+    procedure_name = Path(procedure_path).stem if procedure_path else "未命名流程"
+    session_id = str(session_data.get("session", "unknown"))
+    status = str(session_data.get("status", "unknown"))
+
+    outputs_by_step: OrderedDict[int, list[str]] = OrderedDict()
+    seen_outputs: set[str] = set()
+    for item in session_data.get("history", []):
+        output = item.get("output")
+        if not isinstance(output, str):
+            continue
+        output = output.strip()
+        key = _dedupe_key(output)
+        if not key or key in seen_outputs:
+            continue
+        seen_outputs.add(key)
+        try:
+            step_index = int(item.get("step_index", 0))
+        except (TypeError, ValueError):
+            step_index = 0
+        outputs_by_step.setdefault(step_index, []).append(output)
+
+    lines = [
+        f"# {procedure_name} — Session {session_id}",
+        "",
+        f"- Session：`{session_id}`",
+        f"- 状态：`{status}`",
+        f"- 流程文件：`{procedure_path or '未知'}`",
+        f"- 导出时间：{now_str()}",
+        "",
+    ]
+
+    if not outputs_by_step:
+        lines.extend(["_当前 Session 尚未记录正式输出。_", ""])
+        return "\n".join(lines)
+
+    for step_index, outputs in outputs_by_step.items():
+        lines.extend([f"## 步骤 {step_index}", ""])
+        for output_index, output in enumerate(outputs):
+            if output_index:
+                lines.extend(["---", ""])
+            lines.extend([output, ""])
+
+    return "\n".join(lines)
 
 
 class DashboardHTTPHandler(BaseHTTPRequestHandler):
@@ -126,6 +179,32 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                         continue
                 sessions.sort(key=lambda x: x["mtime"], reverse=True)
                 self._write_json({"sessions": sessions})
+                return
+
+            if path.startswith("/api/sessions/") and path.endswith("/export"):
+                session_id = path[len("/api/sessions/"):-len("/export")].strip("/")
+                if not session_id or "/" in session_id or "\\" in session_id:
+                    self.send_error(400, "Invalid session ID")
+                    return
+                session_path = self.default_sessions_dir / f"{session_id}.json"
+                if not session_path.exists():
+                    self.send_error(404, "Session not found")
+                    return
+                try:
+                    session_data = json.loads(session_path.read_text(encoding="utf-8"))
+                    markdown = build_session_markdown(session_data).encode("utf-8")
+                    filename = f"railrun-{session_id}-outputs.md"
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/markdown; charset=utf-8")
+                    self.send_header(
+                        "Content-Disposition",
+                        f"attachment; filename=\"{filename}\"; filename*=UTF-8''{quote(filename)}",
+                    )
+                    self.send_header("Content-Length", str(len(markdown)))
+                    self.end_headers()
+                    self.wfile.write(markdown)
+                except Exception as exc:
+                    self.send_error(500, f"Export failed: {str(exc)}")
                 return
 
             if path.startswith("/api/sessions/"):
@@ -275,7 +354,8 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
                     branch_present = "branch_value" in req
                     branch_value = req.get("branch_value")
                     variables = req.get("variables")
-                    self._write_json(runtime.next_step(session_id, branch_value, branch_present, variables))
+                    output = req.get("output")
+                    self._write_json(runtime.next_step(session_id, branch_value, branch_present, variables, output))
                     return
 
                 if action == "rewind":

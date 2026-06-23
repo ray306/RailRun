@@ -1,0 +1,28 @@
+{
+  "queue_nodes": [],
+  "root": {
+    "name": "AI资本泡沫破裂事件在融资层面的预警信号",
+    "purpose": "设计可监测、可分层、可验证的融资层面预警指标体系，用于提前识别AI资本泡沫破裂风险。",
+    "status": "processing",
+    "children": [
+      {
+        "name": "资本供需与定价恶化信号",
+        "purpose": "归纳资本是否减少、融资价格是否下修、投资人风险偏好是否退潮。",
+        "status": "candidate",
+        "children": []
+      },
+      {
+        "name": "融资交易质量与资金结构恶化信号",
+        "purpose": "归纳融资仍发生时，交易条款、资金来源和融资工具是否显示更高脆弱性。",
+        "status": "candidate",
+        "children": []
+      },
+      {
+        "name": "融资链条可持续性与退出反馈恶化信号",
+        "purpose": "归纳企业续融、现金消耗和退出渠道是否共同削弱融资闭环。",
+        "status": "candidate",
+        "children": []
+      }
+    ]
+  }
+}

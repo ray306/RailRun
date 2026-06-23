@@ -24,6 +24,10 @@ class SessionState:
     history: list[dict[str, Any]] = field(default_factory=list)
     vars: dict[str, Any] = field(default_factory=dict)
     for_cursors: dict[str, int] = field(default_factory=dict)
+    output_persistence_enabled: bool = True
+    host_output_capture: dict[str, Any] | None = None
+    language: str = "中文"
+    language_message_emitted: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -39,6 +43,10 @@ class SessionState:
             "history": self.history,
             "vars": self.vars,
             "for_cursors": self.for_cursors,
+            "output_persistence_enabled": self.output_persistence_enabled,
+            "host_output_capture": self.host_output_capture,
+            "language": self.language,
+            "language_message_emitted": self.language_message_emitted,
         }
 
     @classmethod
@@ -56,4 +64,8 @@ class SessionState:
             history=data.get("history", []),
             vars=data.get("vars", {}),
             for_cursors=data.get("for_cursors", {}),
+            output_persistence_enabled=data.get("output_persistence_enabled", True),
+            host_output_capture=data.get("host_output_capture"),
+            language=data.get("language", "中文"),
+            language_message_emitted=data.get("language_message_emitted", False),
         )

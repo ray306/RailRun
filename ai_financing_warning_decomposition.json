@@ -1,0 +1,99 @@
+{
+  "root": {
+    "name": "AI资本泡沫破裂事件能体现在融资层面的预警信号",
+    "purpose": "用于设计预警指标",
+    "status": "in_progress",
+    "children": [
+      {
+        "name": "资金供给渠道收缩",
+        "status": "needs_children",
+        "children": [
+          {
+            "name": "股权资本渠道",
+            "status": "needs_children",
+            "children": [
+              {
+                "name": "VC/PE 股权融资收缩",
+                "status": "candidate"
+              },
+              {
+                "name": "企业风险投资与战略投资收缩",
+                "status": "candidate"
+              },
+              {
+                "name": "公开市场股权融资收缩",
+                "status": "candidate"
+              }
+            ]
+          },
+          {
+            "name": "债务与混合资本渠道",
+            "status": "needs_children",
+            "children": [
+              {
+                "name": "债务融资与信贷收缩",
+                "status": "candidate"
+              },
+              {
+                "name": "可转债、可交换债、结构化融资收缩",
+                "status": "candidate"
+              }
+            ]
+          },
+          {
+            "name": "非传统与经营性融资渠道",
+            "status": "needs_children",
+            "children": [
+              {
+                "name": "政府补贴、产业基金与政策性资金收缩",
+                "status": "candidate"
+              },
+              {
+                "name": "云厂商、芯片厂商等算力/供应链融资支持收缩",
+                "status": "candidate"
+              },
+              {
+                "name": "客户预付款、长期合同与商业信用融资收缩",
+                "status": "candidate"
+              }
+            ]
+          },
+          {
+            "name": "退出与流动性回收渠道",
+            "status": "needs_children",
+            "children": [
+              {
+                "name": "并购退出与二级份额流动性收缩",
+                "status": "candidate"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "融资交易条件恶化",
+        "status": "needs_children",
+        "children": [
+          {
+            "name": "融资价格与条款恶化信号",
+            "status": "candidate"
+          },
+          {
+            "name": "投资者风险偏好下降信号",
+            "status": "candidate"
+          }
+        ]
+      },
+      {
+        "name": "融资质量恶化",
+        "status": "needs_children",
+        "children": [
+          {
+            "name": "融资资金用途与现金流质量恶化信号",
+            "status": "candidate"
+          }
+        ]
+      }
+    ]
+  }
+}

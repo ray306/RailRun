@@ -533,16 +533,7 @@ class RailCompiler:
                 return None
             raise NameError(f"Name {node.id} not defined")
         
-        # Support for Constant in Python 3.8+
-        if hasattr(ast, "Constant") and isinstance(node, ast.Constant):
-            return node.value
-            
-        # Support for older Python versions
-        if hasattr(ast, "Num") and isinstance(node, ast.Num):
-            return node.n
-        if hasattr(ast, "Str") and isinstance(node, ast.Str):
-            return node.s
-        if hasattr(ast, "NameConstant") and isinstance(node, ast.NameConstant):
+        if isinstance(node, ast.Constant):
             return node.value
             
         if isinstance(node, ast.UnaryOp):
@@ -820,14 +811,23 @@ class RailCompiler:
         after: str,
         loop_head: str | None,
         loop_exit: str | None,
+        return_target: str,
         call_stack: list[str],
     ) -> str:
         next_id = after
         for s in reversed(stmts):
-            next_id = self._compile_stmt(s, next_id, loop_head, loop_exit, call_stack)
+            next_id = self._compile_stmt(s, next_id, loop_head, loop_exit, return_target, call_stack)
         return next_id
 
-    def _compile_if(self, s: Stmt, after: str, loop_head: str | None, loop_exit: str | None, call_stack: list[str]) -> str:
+    def _compile_if(
+        self,
+        s: Stmt,
+        after: str,
+        loop_head: str | None,
+        loop_exit: str | None,
+        return_target: str,
+        call_stack: list[str],
+    ) -> str:
         # Build the initial chain of branches: (condition_str_or_None, body, origin)
         raw_chain: list[tuple[str | None, list[Stmt], Origin]] = []
         raw_chain.append((s.cond, s.body, s.origin))
@@ -858,11 +858,11 @@ class RailCompiler:
             return after
 
         if filtered[0][0] is None:
-            return self._compile_stmt_list(filtered[0][1], after, loop_head, loop_exit, call_stack)
+            return self._compile_stmt_list(filtered[0][1], after, loop_head, loop_exit, return_target, call_stack)
 
         if filtered[-1][0] is None:
             fallback_body = filtered[-1][1]
-            fallback = self._compile_stmt_list(fallback_body, after, loop_head, loop_exit, call_stack)
+            fallback = self._compile_stmt_list(fallback_body, after, loop_head, loop_exit, return_target, call_stack)
             filtered_elifs = filtered[1:-1]
         else:
             fallback = after
@@ -871,7 +871,7 @@ class RailCompiler:
         on_false = fallback
         for cond, body, origin in reversed(filtered_elifs):
             branch_id = self.alloc()
-            on_true = self._compile_stmt_list(body, after, loop_head, loop_exit, call_stack)
+            on_true = self._compile_stmt_list(body, after, loop_head, loop_exit, return_target, call_stack)
             self.nodes[branch_id] = {
                 "type": "Branch",
                 "condition": cond,
@@ -883,7 +883,7 @@ class RailCompiler:
 
         cond0, body0, origin0 = filtered[0]
         branch_id = self.alloc()
-        on_true = self._compile_stmt_list(body0, after, loop_head, loop_exit, call_stack)
+        on_true = self._compile_stmt_list(body0, after, loop_head, loop_exit, return_target, call_stack)
         self.nodes[branch_id] = {
             "type": "Branch",
             "condition": cond0,
@@ -899,6 +899,7 @@ class RailCompiler:
         after: str,
         loop_head: str | None,
         loop_exit: str | None,
+        return_target: str,
         call_stack: list[str],
     ) -> str:
         if s.kind == "step":
@@ -929,11 +930,11 @@ class RailCompiler:
             }
             return nid
         if s.kind == "if":
-            return self._compile_if(s, after, loop_head, loop_exit, call_stack)
+            return self._compile_if(s, after, loop_head, loop_exit, return_target, call_stack)
         if s.kind == "while":
             if s.cond == "True":
                 loop_back = self._new_sentinel("while_true_loop_back")
-                body_entry = self._compile_stmt_list(s.body, loop_back, loop_back, after, call_stack)
+                body_entry = self._compile_stmt_list(s.body, loop_back, loop_back, after, return_target, call_stack)
                 for node in self.nodes.values():
                     if node.get("next") == loop_back:
                         node["next"] = body_entry
@@ -950,7 +951,7 @@ class RailCompiler:
                 }
                 return sid
             hid = self.alloc()
-            body_entry = self._compile_stmt_list(s.body, hid, hid, after, call_stack)
+            body_entry = self._compile_stmt_list(s.body, hid, hid, after, return_target, call_stack)
             self.nodes[hid] = {
                 "type": "Branch",
                 "condition": s.cond,
@@ -961,7 +962,7 @@ class RailCompiler:
             return hid
         if s.kind == "for":
             hid = self.alloc()
-            body_entry = self._compile_stmt_list(s.body, hid, hid, after, call_stack)
+            body_entry = self._compile_stmt_list(s.body, hid, hid, after, return_target, call_stack)
             self.nodes[hid] = {
                 "type": "For",
                 "items_expr": s.iter_expr,
@@ -982,7 +983,7 @@ class RailCompiler:
                 raise RailCompileError("continue 出现在循环外", s.origin.file, s.origin.line)
             return loop_head
         if s.kind == "return":
-            return after
+            return return_target
         if s.kind == "call":
             if s.from_step_block:
                 self._add_warning(
@@ -1000,7 +1001,7 @@ class RailCompiler:
             instantiated = [self._instantiate_stmt(x, env) for x in fn.body]
             body = self._register_defs(instantiated)
             try:
-                return self._compile_stmt_list(body, after, loop_head, loop_exit, call_stack + [s.name])
+                return self._compile_stmt_list(body, after, loop_head, loop_exit, after, call_stack + [s.name])
             except RailCompileError as e:
                 ref = f"{s.origin.file}:{s.origin.line}"
                 raise RailCompileError(e.message, e.file, e.line, [ref] + e.references) from e
@@ -1079,7 +1080,7 @@ class RailCompiler:
         executable = self._register_defs(stmts)
         finished_id = self.alloc()
         self.nodes[finished_id] = {"type": "Finished", "instruction": "所有指令已执行完毕。结束输出。"}
-        entry = self._compile_stmt_list(executable, finished_id, None, None, [])
+        entry = self._compile_stmt_list(executable, finished_id, None, None, finished_id, [])
 
         # Renumber nodes so IDs align with execution order (entry == "1").
         entry, self.nodes = self._renumber_nodes(entry, self.nodes)

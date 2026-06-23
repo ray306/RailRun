@@ -878,6 +878,10 @@
                         <p id="detail-session-proc">流程文件: -</p>
                     </div>
                     <div class="btn-group">
+                        <button class="btn btn-secondary" id="btn-export" onclick="exportCurrentSession()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+                            导出 Markdown
+                        </button>
                         <button class="btn btn-orange" id="btn-pause" onclick="togglePauseResume()">
                             <!-- Will be populated dynamically -->
                         </button>
@@ -1307,6 +1311,10 @@
                                 <span class="history-time">${formattedTime}</span>
                             </div>
                             <div class="history-content">${escapeHTML(mainContent)}</div>
+                            ${Object.prototype.hasOwnProperty.call(item, 'output') ? `
+                                <div class="history-meta" style="margin-top: 0.75rem;">正式输出</div>
+                                <div class="history-content">${escapeHTML(String(item.output))}</div>
+                            ` : ''}
                             <div class="history-meta">源节点: ${item.node_id}</div>
                             
                             <!-- Jump action buttons (only if session is active) -->
@@ -1399,6 +1407,18 @@
                     postRPC({ action: 'shutdown_session', session: currentSessionId });
                 }
             });
+        }
+
+        function exportCurrentSession() {
+            if (!currentSessionId) return;
+            const exportUrl = `/api/sessions/${encodeURIComponent(currentSessionId)}/export`;
+            const link = document.createElement('a');
+            link.href = exportUrl;
+            link.download = `railrun-${currentSessionId}-outputs.md`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast('Markdown 导出已开始', false);
         }
 
         function triggerServiceShutdown() {

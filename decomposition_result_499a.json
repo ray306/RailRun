@@ -1,0 +1,76 @@
+{
+  "queue_nodes": [
+    "融资价格、估值与条款重估",
+    "融资结构、资金来源与非市场化支撑脆弱化",
+    "退出市场传导与企业再融资压力"
+  ],
+  "current_node": "融资活动与资本供给退潮",
+  "root": {
+    "name": "AI资本泡沫破裂事件能体现在融资层面的预警信号",
+    "purpose": "用于设计融资层面的预警信号、监测指标和预警框架",
+    "status": "in_progress",
+    "children": [
+      {
+        "name": "融资活动与资本供给退潮",
+        "purpose": "判断AI融资环境是否从扩张、拥挤转向资本流入放缓或撤退",
+        "status": "candidate_intermediate",
+        "children": [
+          {
+            "name": "AI融资总额、融资笔数和同比/环比增速下滑",
+            "purpose": "监测AI一级市场融资规模和交易活跃度是否从高增长转向收缩",
+            "status": "candidate",
+            "children": []
+          },
+          {
+            "name": "AI新增投资人、活跃投资人和跟投方数量减少",
+            "purpose": "监测资本供给方是否从扩张参与转为观望或退出",
+            "status": "candidate",
+            "children": []
+          },
+          {
+            "name": "AI相关基金募资额、干火药和专项预算收缩",
+            "purpose": "监测VC、PE、CVC等资金源头是否削弱AI投资能力",
+            "status": "candidate",
+            "children": []
+          },
+          {
+            "name": "AI早中晚期轮次融资出现断层",
+            "purpose": "监测融资退潮是否集中破坏某些阶段企业的后续融资能力",
+            "status": "candidate",
+            "children": []
+          },
+          {
+            "name": "AI融资周期拉长、撤回融资和融资失败率上升",
+            "purpose": "监测企业获得资金的难度是否明显提高",
+            "status": "candidate",
+            "children": []
+          },
+          {
+            "name": "AI巨额融资集中度上升而长尾项目融资枯竭",
+            "purpose": "监测少数头部项目吸金是否掩盖整体资本退潮",
+            "status": "candidate",
+            "children": []
+          }
+        ]
+      },
+      {
+        "name": "融资价格、估值与条款重估",
+        "purpose": "判断AI融资交易是否从高估值宽松条款转向风险重估和投资人保护增强",
+        "status": "candidate_intermediate",
+        "children": []
+      },
+      {
+        "name": "融资结构、资金来源与非市场化支撑脆弱化",
+        "purpose": "判断AI企业是否依赖桥接、债务、供应商、客户、关联方或战略资金维持估值与经营",
+        "status": "candidate_intermediate",
+        "children": []
+      },
+      {
+        "name": "退出市场传导与企业再融资压力",
+        "purpose": "判断外部退出窗口和企业自身资金压力是否正在压制后续融资能力",
+        "status": "candidate_intermediate",
+        "children": []
+      }
+    ]
+  }
+}

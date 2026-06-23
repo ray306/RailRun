@@ -1,0 +1,94 @@
+params(input_kind='prompt', input_path='', suggested_output_rail='', source_flow_params='')
+
+"""
+你是 RailRun 流程生成 Agent。
+你的任务是把用户提供的流程需求或 md/txt 流程文件转写为可执行的 .rail 流程文件。
+必须严格依据 PROTOCOL.md，尤其是“从原始流程转写 Rail”章节执行。
+生成、验证和审阅阶段允许读取原始 md/txt 输入和刚生成的 .rail 文件。
+正式执行生成结果前，必须先终止当前生成 session，再用新的 .rail 文件开启新 session。
+"""
+
+step:
+  判断输入来源。
+  当前 input_kind 是：{{input_kind}}
+  如果 input_kind=file，则原始需求文件路径是：{{input_path}}
+  如果 input_kind=prompt，则不要读取外部文件；请基于当前用户原始 prompt 判断其中是否直接描述了一个需求或流程。
+
+if 输入不可能构成流程说明:
+  step:
+    停止转换。
+    向用户说明：当前输入不足以生成 Rail 流程。
+    请用户提供 md/txt 流程文件路径，或直接描述流程目标、步骤、分支、循环、用户输入点和输出要求。
+  return
+else:
+  step:
+    准备转换输入。
+    如果 input_kind=file：读取 {{input_path}} 的完整内容作为原始需求。
+    如果 input_kind=prompt：使用当前用户原始 prompt 作为原始需求。
+    不要提前执行原始需求中的任务，只分析它描述的流程。
+
+step:
+  建议输出 rail 文件路径。
+  如果已有 suggested_output_rail，则建议使用：{{suggested_output_rail}}
+  如果没有 suggested_output_rail，则根据流程主题建议一个简短、稳定、可读的 .rail 文件路径。
+  同时说明如果后续执行生成流程，需要保留原流程参数：{{source_flow_params}}
+
+step:
+  展示转写思路并请求用户确认。
+  必须说明：
+  - 顶层 guidance 会包含什么目标和全局约束；
+  - 哪些内容会变成 step；
+  - 哪些内容会变成 ask；
+  - 哪些内容会变成 if/elif/else；
+  - 哪些内容会变成 while 或 for；
+  - 输出 rail 文件路径。
+  询问用户是否确认按该思路生成，或需要先修改思路/文件名。
+
+ask:
+  请确认是否按上述思路生成 .rail 文件；如果需要修改，请直接说明修改要求或新的输出路径。
+
+while 用户要求继续修改思路或文件名:
+  step:
+    根据用户反馈更新转写思路或输出文件路径。
+    重新展示关键变化和最终输出路径。
+  ask:
+    请确认是否按更新后的思路生成 .rail 文件；如果仍需修改，请继续说明。
+
+step:
+  正式生成 .rail 文件。
+  严格依据 PROTOCOL.md 将原始需求转写为 Rail DSL。
+  将结果写入用户确认的 .rail 输出路径。
+  如果保留了原流程参数 {{source_flow_params}}，只在最终执行命令中携带这些参数，不要把它们硬编码进生成的流程，除非用户明确要求。
+
+step:
+  编译验证生成的 .rail 文件。
+  使用命令：python -X utf8 scripts/rail_compiler.py --input "<生成的 .rail 文件路径>" --output "<同目录同名 -cfg.json>"
+  如果验证失败，读取错误信息，修正 .rail 文件，并重复验证直到通过。
+  不得执行未通过验证的流程。
+
+step:
+  向用户展示生成结果。
+  如果 .rail 内容较短，展示完整流程和结构讲解。
+  如果内容过长，只展示摘要、主要节点、分支、循环、ask 点、输出路径和验证结果。
+  明确询问用户：继续修改现有结果，还是执行任务。
+
+ask:
+  请选择：继续修改生成的 .rail，或执行任务。
+
+while 用户要求继续修改生成的 .rail:
+  step:
+    按用户要求修改同一个 .rail 文件。
+    重新运行编译验证。
+    再次展示完整流程或摘要、结构讲解和验证结果。
+  ask:
+    请确认是继续修改，还是执行任务。
+
+step:
+  如果用户确认执行任务：
+  1. 告知用户将终止当前生成 session。
+  2. 调用 next_step.py --session <当前生成 session_id> --shutdown。
+  3. 用生成的 .rail 文件开启新的 RailRun session。
+     如果 source_flow_params 非空，新 session 的 --procedure 应形如：
+     "<生成的 .rail 文件路径>({{source_flow_params}})"
+     否则直接使用生成的 .rail 文件路径。
+  4. 新 session 开始后，恢复禁止提前读取 .rail 文件内容的执行约束，只通过 next_step 逐步披露。

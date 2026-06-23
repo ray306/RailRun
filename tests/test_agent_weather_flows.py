@@ -114,14 +114,17 @@ class AgentHarness:
                 raise AssertionError(f"unexpected interference: {resp}")
             if rtype == "Step":
                 self._execute_step(resp["instruction"])
-                resp = self.runtime.next_step(self.session_id)
+                resp = self.runtime.next_step(
+                    self.session_id,
+                    output=f"已执行步骤：{resp['instruction']}",
+                )
                 continue
             if rtype == "Guidance":
                 resp = self.runtime.next_step(self.session_id)
                 continue
             if rtype == "Ask":
                 # Contract tests use deterministic defaults; simulate "continue without user change".
-                resp = self.runtime.next_step(self.session_id)
+                resp = self.runtime.next_step(self.session_id, output="用户选择继续")
                 continue
             if rtype == "For":
                 resp = self.runtime.next_step(self.session_id)
@@ -132,6 +135,7 @@ class AgentHarness:
                     self.session_id,
                     branch_value=decision,
                     branch_present=True,
+                    output=f"分支判断结果：{decision}",
                 )
                 continue
         raise AssertionError("agent harness did not reach Finished within max_steps")

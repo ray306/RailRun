@@ -50,10 +50,12 @@ class ForNodeTests(unittest.TestCase):
         rt.init_session("f1")
 
         steps: list[str] = []
+        previous_was_step = False
         while True:
-            resp = rt.next_step("f1")
+            resp = rt.next_step("f1", output="nested loop output" if previous_was_step else None)
             if resp["type"] == "Finished":
                 break
+            previous_was_step = resp["type"] == "Step"
             if resp["type"] == "Step":
                 steps.append(resp["instruction"])
 
@@ -85,4 +87,3 @@ class ForNodeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -11,6 +11,11 @@ from typing import Any
 from .rail_compiler import RailCompiler
 from .session_state import SessionState, now_str
 from .session_runtime import StepInput, advance_session
+from .host_output import (
+    HostOutputProvider,
+    create_host_output_provider,
+    transcript_from_dict,
+)
 
 
 @contextlib.contextmanager
@@ -53,7 +58,17 @@ def file_lock(file_path: str):
 
 
 class RailRunRuntime:
-    def __init__(self, procedure_path: Path, sessions_dir: Path, max_retries: int = 3, consts: dict[str, Any] = None):
+    def __init__(
+        self,
+        procedure_path: Path,
+        sessions_dir: Path,
+        max_retries: int = 3,
+        consts: dict[str, Any] = None,
+        output_persistence_enabled: bool = True,
+        language: str = "中文",
+        host: str | None = None,
+        host_output_provider: HostOutputProvider | None = None,
+    ):
         self.procedure_path = procedure_path.resolve()
         self.sessions_dir = sessions_dir.resolve()
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
@@ -72,6 +87,9 @@ class RailRunRuntime:
             else:
                 self.dag_path = self.procedure_path.with_name(f"{self.procedure_path.stem}-cfg.json")
         self.max_retries = max_retries
+        self.output_persistence_enabled = output_persistence_enabled
+        self.language = language
+        self.host_output_provider = host_output_provider or create_host_output_provider(host)
         self._ensure_cfg_ready()
 
     def _ensure_cfg_ready(self) -> None:
@@ -154,6 +172,10 @@ class RailRunRuntime:
             status="running",
             cursor={"step_index": 0, "node_id": str(entry)},
             max_retries=session.max_retries,
+            output_persistence_enabled=session.output_persistence_enabled,
+            host_output_capture=session.host_output_capture,
+            language=session.language,
+            language_message_emitted=session.language_message_emitted,
         )
         decisions = self._history_branch_decisions(session.history)
         decision_offsets: dict[tuple[int, str], int] = {}
@@ -210,11 +232,28 @@ class RailRunRuntime:
                     dag_path=str(self.dag_path),
                     cursor={"step_index": 0, "node_id": dag["entry"]},
                     max_retries=self.max_retries,
+                    vars=dict(self.consts),
+                    output_persistence_enabled=self.output_persistence_enabled,
+                    language=self.language,
                 )
+                if session.output_persistence_enabled and self.host_output_provider is not None:
+                    transcript = self.host_output_provider.locate_current_transcript()
+                    if transcript is not None:
+                        session.host_output_capture = transcript.to_dict()
                 self._save_session(session)
+                if not session.output_persistence_enabled:
+                    persistence = {"mode": "disabled"}
+                elif session.host_output_capture is not None:
+                    persistence = {
+                        "mode": "host_transcript",
+                        "host": session.host_output_capture["host"],
+                    }
+                else:
+                    persistence = {"mode": "manual_output"}
                 return {
                     "type": "init",
                     "session": session_id,
+                    "output_persistence": persistence,
                     "instruction": "已分配session_id，请再次调用 next_step --session <id> 读取下一步。请提示用户：如果需要查看可视化流程控制台，可在终端运行 `python next_step.py --ui` 并在浏览器中访问 http://127.0.0.1:8799/。",
                 }
         except RuntimeError as exc:
@@ -226,7 +265,14 @@ class RailRunRuntime:
                 }
             raise
 
-    def next_step(self, session_id: str, branch_value: Any = None, branch_present: bool = False, variables: dict[str, Any] = None) -> dict[str, Any]:
+    def next_step(
+        self,
+        session_id: str,
+        branch_value: Any = None,
+        branch_present: bool = False,
+        variables: dict[str, Any] = None,
+        output: str | None = None,
+    ) -> dict[str, Any]:
         session_file = self._session_file(session_id)
         try:
             with file_lock(str(session_file)):
@@ -254,10 +300,45 @@ class RailRunRuntime:
 
                 dag = self._load_dag()
                 try:
+                    captured_output = None
+                    automatic_capture = (
+                        session.output_persistence_enabled
+                        and isinstance(session.host_output_capture, dict)
+                    )
+                    if automatic_capture:
+                        transcript = transcript_from_dict(session.host_output_capture)
+                        if self.host_output_provider is None:
+                            self.host_output_provider = create_host_output_provider(transcript.host)
+                        if (
+                            self.host_output_provider is None
+                            or self.host_output_provider.name != transcript.host
+                        ):
+                            raise ValueError(f"宿主输出采集器不可用: {transcript.host}")
+                        captured = self.host_output_provider.read_new_formal_messages(transcript)
+                        session.host_output_capture["offset"] = captured.offset
+                        if captured.messages:
+                            captured_output = "\n\n".join(captured.messages)
+                        previous = session.history[-1] if session.history else None
+                        pending_output = (
+                            isinstance(previous, dict)
+                            and previous.get("type") in {"Step", "Ask", "Branch"}
+                            and "output" not in previous
+                        )
+                        if pending_output and not captured_output:
+                            raise ValueError(
+                                f"{transcript.host} transcript 中没有新增的正式消息输出，请等待宿主写入后重试。"
+                            )
+
                     resp, updated = advance_session(
                         session,
                         dag,
-                        StepInput(branch_present=branch_present, branch_value=branch_value, variables=variables),
+                        StepInput(
+                            branch_present=branch_present,
+                            branch_value=branch_value,
+                            variables=variables,
+                            output=captured_output if automatic_capture else output,
+                            require_output=session.output_persistence_enabled,
+                        ),
                         now_fn=now_str,
                     )
                     updated.retry_count = 0
